@@ -1,0 +1,31 @@
+{
+  "name": "@ts-zero/querystring",
+  "version": "0.0.0",
+  "description": "Zero-dependency query string parser and stringifier for TypeScript.",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./parse": {
+      "types": "./dist/parse.d.ts",
+      "default": "./dist/parse.js"
+    },
+    "./stringify": {
+      "types": "./dist/stringify.d.ts",
+      "default": "./dist/stringify.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "tsc -b --clean",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {}
+}

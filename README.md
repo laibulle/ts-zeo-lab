@@ -17,6 +17,7 @@ Objectif: produire des packages TypeScript petits, lisibles, rapides, securises,
 ## Packages
 
 - `@ts-zero/uuid`: generation et manipulation d'UUID, avec un contrat proche du package `uuid`.
+- `@ts-zero/querystring`: parse/stringify de query strings imbriquees, avec un noyau strict inspire de `qs`.
 
 ## Commandes
 
@@ -28,7 +29,7 @@ npm run check
 npm run bench:uuid:compare
 ```
 
-Le benchmark de comparaison installe la reference dans un dossier temporaire hors du depot; elle n'est pas ajoutee aux dependances.
+Les benchmarks de comparaison installent les references dans un dossier temporaire hors du depot; elles ne sont pas ajoutees aux dependances.
 
 ## Release Gate
 

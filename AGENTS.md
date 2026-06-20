@@ -47,3 +47,5 @@ For performance-sensitive UUID changes:
 ```sh
 npm run bench:uuid:compare
 ```
+
+For query string changes, keep the contract strict: reject ambiguous structures, preserve null-prototype parsed objects, and verify `./parse` and `./stringify` remain independently tree-shakable.
