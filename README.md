@@ -18,6 +18,7 @@ Objectif: produire des packages TypeScript petits, lisibles, rapides, securises,
 
 - `@ts-zero/uuid`: generation et manipulation d'UUID, avec un contrat proche du package `uuid`.
 - `@ts-zero/querystring`: parse/stringify de query strings imbriquees, avec un noyau strict inspire de `qs`.
+- `@ts-zero/multipart`: encodage `multipart/form-data` en memoire, avec un noyau strict inspire de `form-data`.
 
 ## Commandes
 

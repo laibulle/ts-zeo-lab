@@ -13,7 +13,7 @@
     "bench:uuid:v7": "npm run build && node packages/uuid/bench/v7.mjs",
     "check": "npm test && npm run pack:check",
     "clean": "tsc -b packages/* --clean",
-    "pack:check": "npm --workspace @ts-zero/uuid pack --dry-run && npm --workspace @ts-zero/querystring pack --dry-run",
+    "pack:check": "npm --workspace @ts-zero/uuid pack --dry-run && npm --workspace @ts-zero/querystring pack --dry-run && npm --workspace @ts-zero/multipart pack --dry-run",
     "test": "npm run build && node --test packages/*/test/*.test.mjs"
   },
   "devDependencies": {

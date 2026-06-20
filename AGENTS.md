@@ -49,3 +49,5 @@ npm run bench:uuid:compare
 ```
 
 For query string changes, keep the contract strict: reject ambiguous structures, preserve null-prototype parsed objects, and verify `./parse` and `./stringify` remain independently tree-shakable.
+
+For multipart changes, keep the contract in-memory and strict: no filesystem, no streams, no MIME database, no weak random fallback, and verify `./parts`, `./encode`, and `./boundary` remain independently tree-shakable.
