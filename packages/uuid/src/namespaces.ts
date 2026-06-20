@@ -1,0 +1,27 @@
+import { parse } from "./format.js";
+import { copyArrayLike } from "./bytes.js";
+
+export const DNS = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
+export const URL = "6ba7b811-9dad-11d1-80b4-00c04fd430c8";
+export const OID = "6ba7b812-9dad-11d1-80b4-00c04fd430c8";
+export const X500 = "6ba7b814-9dad-11d1-80b4-00c04fd430c8";
+
+const DNS_BYTES = Uint8Array.of(0x6b, 0xa7, 0xb8, 0x10, 0x9d, 0xad, 0x11, 0xd1, 0x80, 0xb4, 0x00, 0xc0, 0x4f, 0xd4, 0x30, 0xc8);
+const URL_BYTES = Uint8Array.of(0x6b, 0xa7, 0xb8, 0x11, 0x9d, 0xad, 0x11, 0xd1, 0x80, 0xb4, 0x00, 0xc0, 0x4f, 0xd4, 0x30, 0xc8);
+const OID_BYTES = Uint8Array.of(0x6b, 0xa7, 0xb8, 0x12, 0x9d, 0xad, 0x11, 0xd1, 0x80, 0xb4, 0x00, 0xc0, 0x4f, 0xd4, 0x30, 0xc8);
+const X500_BYTES = Uint8Array.of(0x6b, 0xa7, 0xb8, 0x14, 0x9d, 0xad, 0x11, 0xd1, 0x80, 0xb4, 0x00, 0xc0, 0x4f, 0xd4, 0x30, 0xc8);
+
+export function resolveNamespaceBytes(namespace: string | ArrayLike<number>): Uint8Array {
+  if (typeof namespace !== "string") {
+    return copyArrayLike(namespace, 16);
+  }
+
+  const normalized = namespace.toLowerCase();
+
+  if (normalized === DNS) return DNS_BYTES;
+  if (normalized === URL) return URL_BYTES;
+  if (normalized === OID) return OID_BYTES;
+  if (normalized === X500) return X500_BYTES;
+
+  return parse(namespace);
+}

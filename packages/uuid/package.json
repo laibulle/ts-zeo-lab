@@ -1,0 +1,55 @@
+{
+  "name": "@ts-zero/uuid",
+  "version": "0.0.0",
+  "description": "Zero-dependency UUID utilities for TypeScript.",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./format": {
+      "types": "./dist/format.d.ts",
+      "default": "./dist/format.js"
+    },
+    "./namespaces": {
+      "types": "./dist/namespaces.d.ts",
+      "default": "./dist/namespaces.js"
+    },
+    "./v1": {
+      "types": "./dist/v1.d.ts",
+      "default": "./dist/v1.js"
+    },
+    "./v3": {
+      "types": "./dist/v3.d.ts",
+      "default": "./dist/v3.js"
+    },
+    "./v4": {
+      "types": "./dist/v4.d.ts",
+      "default": "./dist/v4.js"
+    },
+    "./v5": {
+      "types": "./dist/v5.d.ts",
+      "default": "./dist/v5.js"
+    },
+    "./v6": {
+      "types": "./dist/v6.d.ts",
+      "default": "./dist/v6.js"
+    },
+    "./v7": {
+      "types": "./dist/v7.d.ts",
+      "default": "./dist/v7.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "tsc -b --clean",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {}
+}

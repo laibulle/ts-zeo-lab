@@ -1,0 +1,22 @@
+{
+  "name": "@ts-zero/monorepo",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "tsc -b packages/*",
+    "bench": "npm run build && node packages/uuid/bench/generate.mjs",
+    "bench:uuid": "npm run build && node packages/uuid/bench/generate.mjs",
+    "bench:uuid:compare": "npm run build && node packages/uuid/bench/compare-reference.mjs",
+    "bench:uuid:v7": "npm run build && node packages/uuid/bench/v7.mjs",
+    "check": "npm test && npm run pack:check",
+    "clean": "tsc -b packages/* --clean",
+    "pack:check": "npm --workspace @ts-zero/uuid pack --dry-run",
+    "test": "npm run build && node --test packages/*/test/*.test.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0"
+  }
+}

@@ -1,0 +1,12 @@
+node_modules/
+dist/
+packages/*/dist/
+**/dist/
+*.tsbuildinfo
+.DS_Store
+
+# JetBrains / WebStorm
+.idea/
+*.iml
+*.iws
+out/
