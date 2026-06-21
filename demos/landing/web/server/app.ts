@@ -206,10 +206,22 @@ function renderPage(page: Page): string {
     <title>ts-zero demos</title>
     <style>
       :root {
-        color-scheme: light;
+        color-scheme: dark;
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        background: #f6f7f9;
-        color: #17191c;
+        --bg: #05070d;
+        --bg-soft: #090d16;
+        --surface: rgba(15, 21, 34, 0.86);
+        --surface-strong: rgba(21, 30, 48, 0.96);
+        --line: rgba(148, 163, 184, 0.18);
+        --line-strong: rgba(148, 163, 184, 0.32);
+        --text: #f7fbff;
+        --muted: #9aa8bb;
+        --dim: #64748b;
+        --accent: #65e4ff;
+        --accent-strong: #8b5cf6;
+        --danger: #fb7185;
+        background: var(--bg);
+        color: var(--text);
       }
 
       * {
@@ -219,12 +231,16 @@ function renderPage(page: Page): string {
       body {
         margin: 0;
         min-height: 100vh;
+        background:
+          radial-gradient(circle at 18% 0%, rgba(101, 228, 255, 0.16), transparent 30%),
+          radial-gradient(circle at 82% 10%, rgba(139, 92, 246, 0.18), transparent 34%),
+          linear-gradient(180deg, #05070d 0%, #080b13 46%, #05070d 100%);
       }
 
       main {
-        width: min(920px, calc(100% - 32px));
+        width: min(1080px, calc(100% - 32px));
         margin: 0 auto;
-        padding: 56px 0;
+        padding: 42px 0 72px;
       }
 
       header {
@@ -232,22 +248,28 @@ function renderPage(page: Page): string {
         align-items: flex-end;
         justify-content: space-between;
         gap: 24px;
-        margin-bottom: 28px;
+        margin-bottom: 20px;
       }
 
       h1 {
         margin: 0;
-        font-size: 32px;
+        font-size: 28px;
         line-height: 1.1;
         letter-spacing: 0;
       }
 
       h2 {
         margin: 0;
-        max-width: 720px;
-        font-size: 46px;
-        line-height: 1.02;
+        max-width: 780px;
+        font-size: clamp(44px, 7vw, 82px);
+        line-height: 0.96;
         letter-spacing: 0;
+      }
+
+      h3 {
+        margin: 0;
+        font-size: 28px;
+        line-height: 1.08;
       }
 
       p {
@@ -256,7 +278,7 @@ function renderPage(page: Page): string {
 
       .eyebrow {
         margin: 0 0 8px;
-        color: #25636f;
+        color: var(--accent);
         font-size: 12px;
         font-weight: 700;
         letter-spacing: 0.08em;
@@ -264,8 +286,11 @@ function renderPage(page: Page): string {
       }
 
       .count {
-        color: #65707d;
+        max-width: 420px;
+        color: var(--muted);
         font-size: 14px;
+        line-height: 1.5;
+        text-align: right;
         white-space: nowrap;
       }
 
@@ -273,50 +298,55 @@ function renderPage(page: Page): string {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
         align-items: end;
-        gap: 28px;
-        margin: 20px 0 26px;
-        padding: 34px 0 8px;
-        border-top: 1px solid #d8dde5;
+        gap: 32px;
+        margin: 22px 0 18px;
+        padding: 64px 0 36px;
+        border-top: 1px solid var(--line);
       }
 
       .hero p:not(.eyebrow) {
-        max-width: 660px;
-        margin-top: 18px;
-        color: #4b5563;
-        font-size: 17px;
-        line-height: 1.55;
+        max-width: 690px;
+        margin-top: 22px;
+        color: var(--muted);
+        font-size: 18px;
+        line-height: 1.65;
       }
 
       .primary-link {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-height: 42px;
-        padding: 0 15px;
-        border: 1px solid #1e293b;
+        min-height: 44px;
+        padding: 0 16px;
+        border: 1px solid rgba(101, 228, 255, 0.48);
         border-radius: 6px;
-        background: #1e293b;
-        color: #ffffff;
+        background: linear-gradient(135deg, rgba(101, 228, 255, 0.16), rgba(139, 92, 246, 0.2));
+        color: var(--text);
         font-size: 14px;
         font-weight: 700;
         text-decoration: none;
         white-space: nowrap;
+        box-shadow: 0 0 28px rgba(101, 228, 255, 0.08);
       }
 
       .demo-grid {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 10px;
+        gap: 12px;
       }
 
       .demo-tile {
-        min-height: 156px;
-        padding: 16px;
-        border: 1px solid #e1e5eb;
+        min-height: 176px;
+        padding: 18px;
+        border: 1px solid var(--line);
         border-radius: 8px;
-        background: #ffffff;
+        background: linear-gradient(180deg, rgba(18, 25, 40, 0.92), rgba(10, 14, 24, 0.92));
         color: inherit;
         text-decoration: none;
+      }
+
+      .demo-tile:hover {
+        border-color: rgba(101, 228, 255, 0.42);
       }
 
       .demo-tile strong,
@@ -324,21 +354,103 @@ function renderPage(page: Page): string {
         display: block;
       }
 
+      .demo-kicker {
+        margin-bottom: 16px;
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
       .demo-tile strong {
         margin-bottom: 12px;
-        font-size: 17px;
+        font-size: 19px;
       }
 
       .demo-tile span {
-        color: #5f6b7a;
+        color: var(--muted);
         font-size: 14px;
-        line-height: 1.45;
+        line-height: 1.55;
+      }
+
+      .docs {
+        display: grid;
+        grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
+        gap: 18px;
+        margin-top: 14px;
+        padding: 22px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(7, 11, 20, 0.72);
+      }
+
+      .docs-intro p:not(.eyebrow) {
+        margin-top: 14px;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.6;
+      }
+
+      .doc-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .doc-card {
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+      }
+
+      .doc-card strong {
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      .doc-card p {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      .runtime-strip {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .runtime-strip div {
+        min-height: 86px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(101, 228, 255, 0.06);
+      }
+
+      .runtime-strip span,
+      .runtime-strip strong {
+        display: block;
+      }
+
+      .runtime-strip span {
+        margin-bottom: 8px;
+        color: var(--dim);
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .runtime-strip strong {
+        font-size: 15px;
       }
 
       nav {
         display: flex;
         gap: 8px;
-        margin-bottom: 22px;
+        margin-bottom: 18px;
       }
 
       nav a {
@@ -346,18 +458,18 @@ function renderPage(page: Page): string {
         align-items: center;
         min-height: 34px;
         padding: 0 11px;
-        border: 1px solid #d8dde5;
+        border: 1px solid var(--line);
         border-radius: 6px;
-        background: #ffffff;
-        color: #1e293b;
+        background: rgba(15, 21, 34, 0.66);
+        color: var(--muted);
         font-size: 14px;
         text-decoration: none;
       }
 
       nav a.active {
-        background: #1e293b;
-        color: #ffffff;
-        border-color: #1e293b;
+        background: rgba(101, 228, 255, 0.12);
+        color: var(--text);
+        border-color: rgba(101, 228, 255, 0.42);
       }
 
       .composer {
@@ -370,7 +482,7 @@ function renderPage(page: Page): string {
       input,
       button {
         height: 42px;
-        border: 1px solid #d8dde5;
+        border: 1px solid var(--line);
         border-radius: 6px;
         font: inherit;
       }
@@ -378,24 +490,25 @@ function renderPage(page: Page): string {
       input {
         min-width: 0;
         padding: 0 12px;
-        background: #ffffff;
+        background: var(--surface);
+        color: var(--text);
       }
 
       button {
         padding: 0 14px;
-        background: #1e293b;
-        color: #ffffff;
+        background: rgba(101, 228, 255, 0.12);
+        color: var(--text);
         cursor: pointer;
       }
 
       button.secondary {
-        background: #ffffff;
-        color: #1e293b;
+        background: rgba(148, 163, 184, 0.08);
+        color: var(--text);
       }
 
       button.danger {
-        background: #ffffff;
-        color: #9f1239;
+        background: rgba(251, 113, 133, 0.08);
+        color: var(--danger);
       }
 
       ul {
@@ -413,9 +526,9 @@ function renderPage(page: Page): string {
         gap: 8px;
         min-height: 54px;
         padding: 8px 10px 8px 14px;
-        border: 1px solid #e1e5eb;
+        border: 1px solid var(--line);
         border-radius: 8px;
-        background: #ffffff;
+        background: var(--surface);
       }
 
       .title {
@@ -424,7 +537,7 @@ function renderPage(page: Page): string {
       }
 
       .done .title {
-        color: #79828e;
+        color: var(--dim);
         text-decoration: line-through;
       }
 
@@ -441,15 +554,15 @@ function renderPage(page: Page): string {
       .metric {
         min-height: 88px;
         padding: 14px;
-        border: 1px solid #e1e5eb;
+        border: 1px solid var(--line);
         border-radius: 8px;
-        background: #ffffff;
+        background: var(--surface);
       }
 
       .metric strong {
         display: block;
         margin-bottom: 8px;
-        color: #65707d;
+        color: var(--muted);
         font-size: 13px;
         font-weight: 600;
       }
@@ -463,9 +576,10 @@ function renderPage(page: Page): string {
         width: 100%;
         height: 12px;
         margin-top: 12px;
+        accent-color: var(--accent);
       }
 
-      @media (max-width: 560px) {
+      @media (max-width: 760px) {
         main {
           width: min(100% - 20px, 720px);
           padding: 28px 0;
@@ -474,6 +588,8 @@ function renderPage(page: Page): string {
         header,
         .hero,
         .demo-grid,
+        .docs,
+        .runtime-strip,
         .composer,
         li,
         .stats {
@@ -487,6 +603,11 @@ function renderPage(page: Page): string {
 
         .count {
           white-space: normal;
+          text-align: left;
+        }
+
+        h2 {
+          font-size: 44px;
         }
       }
     </style>
@@ -496,7 +617,7 @@ function renderPage(page: Page): string {
       <header>
         <div>
           <p class="eyebrow">ts-zero demo lab</p>
-          <h1>${page === "landing" ? "A tiny full-stack platform, in pieces" : "Todo demo"}</h1>
+          <h1>${page === "landing" ? "ts-zero landing" : "Todo demo"}</h1>
         </div>
         <div class="count">${page === "landing" ? "SSR, client navigation, stores, mutations, native runtime" : `${remaining} open / ${todos.length} total`}</div>
       </header>
@@ -548,25 +669,56 @@ function renderLandingContent(): string {
   return `<section class="hero" aria-labelledby="landing-title">
   <div>
     <p class="eyebrow">zero dependency primitives</p>
-    <h2 id="landing-title">Build the framework surface from small, inspectable packages.</h2>
-    <p>This demo is the playground for SSR, client takeover, immutable state, compact mutations, native runtime experiments and clean application boundaries.</p>
+    <h2 id="landing-title">Small packages for a serious full-stack runtime.</h2>
+    <p>A dark little lab for SSR, client takeover, immutable state, compact mutations, native runtime experiments and deployable web standards.</p>
   </div>
   <a class="primary-link" href="${router.path("todos")}">Open todo demo</a>
 </section>
 
 <section class="demo-grid" aria-label="Available demos">
   <a class="demo-tile" href="${router.path("todos")}">
+    <span class="demo-kicker">interactive</span>
     <strong>Todo app</strong>
     <span>SSR first load, Solid client takeover, SQLite persistence and compact mutation acks.</span>
   </a>
   <a class="demo-tile" href="${router.path("stats")}">
+    <span class="demo-kicker">derived state</span>
     <strong>Live stats</strong>
     <span>Shared immutable store selectors rendered server-side and updated client-side.</span>
   </a>
   <div class="demo-tile">
+    <span class="demo-kicker">native host</span>
     <strong>Native runtime</strong>
     <span>JavaScriptCore host events and native capabilities for the macOS prototype.</span>
   </div>
+</section>
+
+<section class="docs" aria-label="Demo documentation">
+  <div class="docs-intro">
+    <p class="eyebrow">demo docs</p>
+    <h3>What this page exercises</h3>
+    <p>The landing is intentionally small, but it is wired like a deployable product: server-rendered HTML first, a bundled client after, and explicit transport contracts.</p>
+  </div>
+  <div class="doc-list">
+    <article class="doc-card">
+      <strong>Web rendering</strong>
+      <p>Initial requests return HTML from @ts-zero/http; navigation is then handled in the client without a page reload.</p>
+    </article>
+    <article class="doc-card">
+      <strong>State and mutations</strong>
+      <p>@ts-zero/store keeps immutable snapshots, while @ts-zero/mutation sends compact action acknowledgements.</p>
+    </article>
+    <article class="doc-card">
+      <strong>Deployment paths</strong>
+      <p>Vercel uses a Web Function and an in-memory repository. Docker Bun uses a long-running process and SQLite.</p>
+    </article>
+  </div>
+</section>
+
+<section class="runtime-strip" aria-label="Runtime targets">
+  <div><span>Serverless</span><strong>Vercel Web Function</strong></div>
+  <div><span>Container</span><strong>Bun + SQLite</strong></div>
+  <div><span>Native</span><strong>JavaScriptCore host</strong></div>
 </section>`;
 }
 
