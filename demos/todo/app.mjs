@@ -1,7 +1,23 @@
-import { createApp, html, redirect } from "@ts-zero/http";
+import { readFile } from "node:fs/promises";
+
+import { createApp, html, redirect, text } from "@ts-zero/http";
 import { defineRoutes } from "@ts-zero/router";
 import { createStore } from "@ts-zero/store/create";
 import { v7 } from "@ts-zero/uuid/v7";
+
+const moduleFiles = new Map([
+  ["@ts-zero/html/actions.js", new URL("../../packages/html/dist/actions.js", import.meta.url)],
+  ["@ts-zero/html/bindings.js", new URL("../../packages/html/dist/bindings.js", import.meta.url)],
+  ["@ts-zero/html/elements.js", new URL("../../packages/html/dist/elements.js", import.meta.url)],
+  ["@ts-zero/html/errors.js", new URL("../../packages/html/dist/errors.js", import.meta.url)],
+  ["@ts-zero/html/mount.js", new URL("../../packages/html/dist/mount.js", import.meta.url)],
+  ["@ts-zero/html/types.js", new URL("../../packages/html/dist/types.js", import.meta.url)],
+  ["@ts-zero/store/create.js", new URL("../../packages/store/dist/create.js", import.meta.url)],
+  ["@ts-zero/store/errors.js", new URL("../../packages/store/dist/errors.js", import.meta.url)],
+  ["@ts-zero/store/freeze.js", new URL("../../packages/store/dist/freeze.js", import.meta.url)],
+  ["@ts-zero/store/snapshot.js", new URL("../../packages/store/dist/snapshot.js", import.meta.url)],
+  ["@ts-zero/store/types.js", new URL("../../packages/store/dist/types.js", import.meta.url)],
+]);
 
 const store = createStore({
   freeze: true,
@@ -52,6 +68,9 @@ export const router = defineRoutes((r) => {
 
   r.scope("/", { pipe: "browser" }, (r) => {
     r.get("home", "/", renderHome);
+    r.get("client", "/client.mjs", renderClientModule);
+    r.get("html.module", "/modules/@ts-zero/html/:file", serveHtmlModule);
+    r.get("store.module", "/modules/@ts-zero/store/:file", serveStoreModule);
     r.scope("/todos", (r) => {
       r.post("todos.create", "/", createTodo);
       r.post("todos.toggle", "/:id/toggle", toggleTodo);
@@ -70,6 +89,18 @@ function mountRoutes(app, router) {
 
 function renderHome() {
   return html(renderPage());
+}
+
+function renderClientModule() {
+  return javascript(renderClientScript());
+}
+
+async function serveHtmlModule({ params }) {
+  return serveModule(`@ts-zero/html/${params.file}`);
+}
+
+async function serveStoreModule({ params }) {
+  return serveModule(`@ts-zero/store/${params.file}`);
 }
 
 async function createTodo({ request }) {
@@ -103,6 +134,7 @@ async function readForm(request) {
 function renderPage() {
   const { todos } = store.getState();
   const remaining = todos.filter((todo) => !todo.completed).length;
+  const snapshot = JSON.stringify(store.snapshot()).replaceAll("<", "\\u003c");
 
   return `<!doctype html>
 <html lang="en">
@@ -250,7 +282,7 @@ function renderPage() {
     </style>
   </head>
   <body>
-    <main>
+    <main id="app">
       <header>
         <h1>ts-zero todo</h1>
         <div class="count">${remaining} open / ${todos.length} total</div>
@@ -265,6 +297,8 @@ function renderPage() {
         ${todos.map(renderTodo).join("")}
       </ul>
     </main>
+    <script id="initial-state" type="application/json">${snapshot}</script>
+    <script type="module" src="/client.mjs"></script>
   </body>
 </html>`;
 }
@@ -289,4 +323,141 @@ function escapeHtml(value) {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
+}
+
+async function serveModule(specifier) {
+  const file = moduleFiles.get(specifier);
+
+  if (file === undefined) {
+    return text("Not Found", { status: 404 });
+  }
+
+  return javascript(await readFile(file, "utf8"));
+}
+
+function javascript(body) {
+  return new Response(body, {
+    headers: {
+      "content-type": "text/javascript; charset=utf-8",
+      "cache-control": "no-store",
+    },
+  });
+}
+
+function renderClientScript() {
+  return `import { formAction } from "/modules/@ts-zero/html/actions.js";
+import { list, select } from "/modules/@ts-zero/html/bindings.js";
+import { h, text } from "/modules/@ts-zero/html/elements.js";
+import { mount } from "/modules/@ts-zero/html/mount.js";
+import { createStore } from "/modules/@ts-zero/store/create.js";
+
+const initial = JSON.parse(document.getElementById("initial-state").textContent);
+
+const store = createStore({
+  freeze: true,
+  state: initial.state,
+  version: initial.version,
+  context: {
+    id: () => crypto.randomUUID(),
+  },
+  transitions: {
+    createTodo: (state, title, context) => ({
+      ...state,
+      todos: [
+        {
+          id: context.id(),
+          title,
+          completed: false,
+        },
+        ...state.todos,
+      ],
+    }),
+    toggleTodo: (state, id) => ({
+      ...state,
+      todos: state.todos.map((todo) => (todo.id === id ? { ...todo, completed: !todo.completed } : todo)),
+    }),
+    deleteTodo: (state, id) => ({
+      ...state,
+      todos: state.todos.filter((todo) => todo.id !== id),
+    }),
+  },
+});
+
+mount(document.getElementById("app"), renderApp());
+
+function renderApp() {
+  return [
+    h("header", null,
+      h("h1", null, "ts-zero todo"),
+      select(store, (state) => {
+        const remaining = state.todos.filter((todo) => !todo.completed).length;
+        return \`\${remaining} open / \${state.todos.length} total\`;
+      }, (label) => h("div", { class: "count" }, label)),
+    ),
+    h("form", {
+      class: "composer",
+      method: "post",
+      action: "${router.path("todos.create")}",
+      onSubmit: withServerPost(formAction(store, "createTodo", (_form, data) => String(data.get("title") ?? "").trim()), (form) => {
+        form.reset();
+      }),
+    },
+      h("input", { name: "title", autocomplete: "off", maxlength: 120, placeholder: "Add a task", required: true }),
+      h("button", { type: "submit" }, "Add"),
+    ),
+    h("ul", null,
+      list(
+        store,
+        (state) => state.todos,
+        (todo) => todo.id,
+        renderTodo,
+      ),
+    ),
+  ];
+}
+
+function renderTodo(todo) {
+  return h("li", { class: todo.completed ? "done" : "" },
+    h("span", { class: "title" }, todo.title),
+    h("form", {
+      method: "post",
+      action: \`/todos/\${encodeURIComponent(todo.id)}/toggle\`,
+      onSubmit: withServerPost((event) => {
+        event.preventDefault();
+        store.dispatch("toggleTodo", todo.id);
+      }),
+    },
+      h("button", { class: "secondary", type: "submit" }, todo.completed ? "Reopen" : "Done"),
+    ),
+    h("form", {
+      method: "post",
+      action: \`/todos/\${encodeURIComponent(todo.id)}/delete\`,
+      onSubmit: withServerPost((event) => {
+        event.preventDefault();
+        store.dispatch("deleteTodo", todo.id);
+      }),
+    },
+      h("button", { class: "danger", type: "submit" }, "Delete"),
+    ),
+  );
+}
+
+function withServerPost(handler, afterDispatch = () => undefined) {
+  return (event) => {
+    handler(event);
+
+    if (event.defaultPrevented !== true) {
+      return;
+    }
+
+    const form = event.currentTarget;
+    const body = new URLSearchParams(new FormData(form));
+    fetch(form.action, {
+      method: "POST",
+      body,
+    }).catch(() => undefined);
+    afterDispatch(form);
+  };
+}
+`;
 }

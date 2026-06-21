@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@ts-zero/bun-server": "0.0.0",
+    "@ts-zero/html": "0.0.0",
     "@ts-zero/http": "0.0.0",
     "@ts-zero/node-server": "0.0.0",
     "@ts-zero/router": "0.0.0",

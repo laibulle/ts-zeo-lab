@@ -59,3 +59,5 @@ For runtime server adapters, keep Node and Bun isolated in separate packages. `@
 For router changes, keep `defineRoutes` explicit and decorator-free. File-based routing, React adapters, and code generation belong in separate optional packages, not in `@ts-zero/router`.
 
 For store changes, keep the core deterministic and immutable: no React, no transport, no persistence, no proxy layer, no runtime-specific APIs. Preserve selector subscriptions for fine-grained rendering, versioned snapshots for hydration, replace patches for v0 replication, and focused subpaths for tree-shaking.
+
+For HTML changes, keep `@ts-zero/html` browser-HTML-specific and store-first: real DOM nodes, no raw HTML strings, no VDOM, no compiler, no JSX requirement, no React compatibility layer, no mobile abstraction, and no runtime dependency on `@ts-zero/store`.

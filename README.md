@@ -24,6 +24,7 @@ Objectif: produire des packages TypeScript petits, lisibles, rapides, securises,
 - `@ts-zero/bun-server`: adaptateur Bun.serve pour handlers Web Standard.
 - `@ts-zero/router`: routeur explicite `defineRoutes`, manifest public, scopes et pipelines.
 - `@ts-zero/store`: noyau d'etat immutable pour runtimes serveur/client, hydration et rendu fin.
+- `@ts-zero/html`: runtime UI HTML browser, store-first, sans VDOM generaliste ni compilateur obligatoire.
 
 ## Commandes
 
@@ -51,7 +52,7 @@ Ce gate construit les packages, lance les tests, verifie les subpaths publics, l
 
 ## Demos
 
-- `demos/todo`: todo app rendue cote serveur avec `@ts-zero/http`, `@ts-zero/node-server`, `@ts-zero/bun-server` et `@ts-zero/uuid/v7`.
+- `demos/todo`: todo app rendue cote serveur avec `@ts-zero/http`, `@ts-zero/node-server`, `@ts-zero/bun-server`, `@ts-zero/router`, `@ts-zero/store` et `@ts-zero/uuid/v7`.
 
 ## Tree-Shaking Top Tier
 
