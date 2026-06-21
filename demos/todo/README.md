@@ -29,6 +29,7 @@ npm run demo:todo:bun
 - `@ts-zero/store` pour l'etat immutable partage entre le serveur et le client;
 - `@ts-zero/uuid/v7` pour les ids de todos;
 - formulaires HTML classiques;
+- plusieurs pages: liste des todos et statistiques;
 - routes POST sans JavaScript client, gardees comme fallback;
 - client TSX dans `client.tsx`, structure comme une petite couche de composants;
 - compilation du client demo avec le JSX runtime `@ts-zero/html/jsx-runtime`;

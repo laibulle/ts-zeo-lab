@@ -77,6 +77,7 @@ export const router = defineRoutes((r) => {
 
   r.scope("/", { pipe: "browser" }, (r) => {
     r.get("home", "/", renderHome);
+    r.get("stats", "/stats", renderStats);
     r.get("client", "/client.mjs", renderClientModule);
     r.get("html.module", "/modules/@ts-zero/html/:file", serveHtmlModule);
     r.get("store.module", "/modules/@ts-zero/store/:file", serveStoreModule);
@@ -97,7 +98,11 @@ function mountRoutes(app, router) {
 }
 
 function renderHome() {
-  return html(renderPage());
+  return html(renderPage("todos"));
+}
+
+function renderStats() {
+  return html(renderPage("stats"));
 }
 
 async function renderClientModule() {
@@ -140,7 +145,7 @@ async function readForm(request) {
   return new URLSearchParams(body);
 }
 
-function renderPage() {
+function renderPage(page) {
   const { todos } = store.getState();
   const remaining = todos.filter((todo) => !todo.completed).length;
   const snapshot = JSON.stringify(store.snapshot()).replaceAll("<", "\\u003c");
@@ -193,6 +198,31 @@ function renderPage() {
         color: #65707d;
         font-size: 14px;
         white-space: nowrap;
+      }
+
+      nav {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 22px;
+      }
+
+      nav a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 34px;
+        padding: 0 11px;
+        border: 1px solid #d8dde5;
+        border-radius: 6px;
+        background: #ffffff;
+        color: #1e293b;
+        font-size: 14px;
+        text-decoration: none;
+      }
+
+      nav a.active {
+        background: #1e293b;
+        color: #ffffff;
+        border-color: #1e293b;
       }
 
       .composer {
@@ -267,6 +297,39 @@ function renderPage() {
         margin: 0;
       }
 
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .metric {
+        min-height: 88px;
+        padding: 14px;
+        border: 1px solid #e1e5eb;
+        border-radius: 8px;
+        background: #ffffff;
+      }
+
+      .metric strong {
+        display: block;
+        margin-bottom: 8px;
+        color: #65707d;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .metric span {
+        font-size: 28px;
+        line-height: 1;
+      }
+
+      progress {
+        width: 100%;
+        height: 12px;
+        margin-top: 12px;
+      }
+
       @media (max-width: 560px) {
         main {
           width: min(100% - 20px, 720px);
@@ -275,7 +338,8 @@ function renderPage() {
 
         header,
         .composer,
-        li {
+        li,
+        .stats {
           grid-template-columns: 1fr;
           align-items: stretch;
         }
@@ -297,14 +361,8 @@ function renderPage() {
         <div class="count">${remaining} open / ${todos.length} total</div>
       </header>
 
-      <form class="composer" method="post" action="${router.path("todos.create")}">
-        <input name="title" autocomplete="off" maxlength="120" placeholder="Add a task" required>
-        <button type="submit">Add</button>
-      </form>
-
-      <ul>
-        ${todos.map(renderTodo).join("")}
-      </ul>
+      ${renderNavigation(page)}
+      ${page === "stats" ? renderStatsContent(todos) : renderTodosContent(todos)}
     </main>
     <script id="initial-state" type="application/json">${snapshot}</script>
     <script type="importmap">${renderImportMap()}</script>
@@ -325,6 +383,41 @@ function renderTodo(todo) {
     <button class="danger" type="submit">Delete</button>
   </form>
 </li>`;
+}
+
+function renderNavigation(page) {
+  return `<nav aria-label="Todo navigation">
+  <a class="${page === "todos" ? "active" : ""}" href="${router.path("home")}">Todos</a>
+  <a class="${page === "stats" ? "active" : ""}" href="${router.path("stats")}">Stats</a>
+</nav>`;
+}
+
+function renderTodosContent(todos) {
+  return `<form class="composer" method="post" action="${router.path("todos.create")}">
+  <input name="title" autocomplete="off" maxlength="120" placeholder="Add a task" required>
+  <button type="submit">Add</button>
+</form>
+
+<ul>
+  ${todos.map(renderTodo).join("")}
+</ul>`;
+}
+
+function renderStatsContent(todos) {
+  const completed = todos.filter((todo) => todo.completed).length;
+  const remaining = todos.length - completed;
+  const progress = todos.length === 0 ? 0 : Math.round((completed / todos.length) * 100);
+
+  return `<section class="stats" aria-label="Todo stats">
+  <div class="metric"><strong>Total</strong><span>${todos.length}</span></div>
+  <div class="metric"><strong>Open</strong><span>${remaining}</span></div>
+  <div class="metric"><strong>Done</strong><span>${completed}</span></div>
+</section>
+<div class="metric" style="margin-top: 10px;">
+  <strong>Progress</strong>
+  <span>${progress}%</span>
+  <progress value="${completed}" max="${Math.max(todos.length, 1)}"></progress>
+</div>`;
 }
 
 function escapeHtml(value) {

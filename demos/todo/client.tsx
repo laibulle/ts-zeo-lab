@@ -15,6 +15,12 @@ interface TodoState {
   readonly todos: readonly Todo[];
 }
 
+type Page = "todos" | "stats";
+
+interface UiState {
+  readonly page: Page;
+}
+
 interface Snapshot {
   readonly version: number;
   readonly state: TodoState;
@@ -22,6 +28,8 @@ interface Snapshot {
 
 interface Routes {
   readonly createTodo: string;
+  readonly home: string;
+  readonly stats: string;
   readonly toggleTodo: (id: string) => string;
   readonly deleteTodo: (id: string) => string;
 }
@@ -33,6 +41,8 @@ interface TodoContext {
 
 const routes: Routes = {
   createTodo: "/todos/",
+  home: "/",
+  stats: "/stats",
   toggleTodo: (id) => `/todos/${encodeURIComponent(id)}/toggle`,
   deleteTodo: (id) => `/todos/${encodeURIComponent(id)}/delete`,
 };
@@ -45,18 +55,67 @@ if (initialState === null || initialState.textContent === null) {
 
 const initial = JSON.parse(initialState.textContent) as Snapshot;
 const store = createTodoStore(initial);
+const uiStore = createUiStore(getPageFromLocation(routes));
 const target = document.getElementById("app");
 
 if (target === null) {
   throw new Error("Missing app target");
 }
 
-mount(target, <TodoApp store={store} routes={routes} />);
+addEventListener("popstate", () => {
+  uiStore.dispatch("navigate", getPageFromLocation(routes));
+});
 
-function TodoApp({ store, routes }: { readonly store: Store<TodoState>; readonly routes: Routes }): HtmlChild {
+mount(target, <TodoApp store={store} uiStore={uiStore} routes={routes} />);
+
+function TodoApp({
+  store,
+  uiStore,
+  routes,
+}: {
+  readonly store: Store<TodoState>;
+  readonly uiStore: Store<UiState>;
+  readonly routes: Routes;
+}): HtmlChild {
   return (
     <>
       <TodoHeader store={store} />
+      {select(uiStore, (state) => state.page, (page) => (
+        <>
+          <TodoNavigation page={page} uiStore={uiStore} routes={routes} />
+          {page === "stats"
+            ? <TodoStats store={store} />
+            : <TodoPage store={store} routes={routes} />}
+        </>
+      ))}
+    </>
+  );
+}
+
+function TodoNavigation({
+  page,
+  uiStore,
+  routes,
+}: {
+  readonly page: Page;
+  readonly uiStore: Store<UiState>;
+  readonly routes: Routes;
+}): HtmlChild {
+  return (
+    <nav aria-label="Todo navigation">
+      <a class={page === "todos" ? "active" : ""} href={routes.home} onClick={navigateTo(uiStore, "todos", routes.home)}>
+        Todos
+      </a>
+      <a class={page === "stats" ? "active" : ""} href={routes.stats} onClick={navigateTo(uiStore, "stats", routes.stats)}>
+        Stats
+      </a>
+    </nav>
+  );
+}
+
+function TodoPage({ store, routes }: { readonly store: Store<TodoState>; readonly routes: Routes }): HtmlChild {
+  return (
+    <>
       <TodoComposer store={store} action={routes.createTodo} />
       <TodoList store={store} routes={routes} />
     </>
@@ -89,6 +148,23 @@ function TodoComposer({ store, action }: { readonly store: Store<TodoState>; rea
       <button type="submit">Add</button>
     </form>
   );
+}
+
+function TodoStats({ store }: { readonly store: Store<TodoState> }): HtmlChild {
+  return select(store, selectStats, (stats) => (
+    <>
+      <section class="stats" aria-label="Todo stats">
+        <div class="metric"><strong>Total</strong><span>{stats.total}</span></div>
+        <div class="metric"><strong>Open</strong><span>{stats.remaining}</span></div>
+        <div class="metric"><strong>Done</strong><span>{stats.completed}</span></div>
+      </section>
+      <div class="metric" style="margin-top: 10px;">
+        <strong>Progress</strong>
+        <span>{stats.progress}%</span>
+        <progress value={stats.completed} max={Math.max(stats.total, 1)} />
+      </div>
+    </>
+  ));
 }
 
 function TodoList({ store, routes }: { readonly store: Store<TodoState>; readonly routes: Routes }): HtmlChild {
@@ -178,9 +254,63 @@ function createTodoStore(snapshot: Snapshot): Store<TodoState> {
   });
 }
 
+function createUiStore(page: Page): Store<UiState> {
+  return createStore({
+    state: { page },
+    transitions: {
+      navigate: (_state, nextPage: unknown) => {
+        if (nextPage !== "todos" && nextPage !== "stats") {
+          return _state;
+        }
+
+        return { page: nextPage };
+      },
+    },
+  });
+}
+
+function getPageFromLocation(routes: Routes): Page {
+  return location.pathname === routes.stats ? "stats" : "todos";
+}
+
+function navigateTo(uiStore: Store<UiState>, page: Page, path: string): (event: MouseEvent) => void {
+  return (event) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (location.pathname !== path) {
+      history.pushState(null, "", path);
+    }
+
+    uiStore.dispatch("navigate", page);
+  };
+}
+
 function selectTodoCountLabel(state: TodoState): string {
   const remaining = state.todos.filter((todo) => !todo.completed).length;
   return `${remaining} open / ${state.todos.length} total`;
+}
+
+function selectStats(state: TodoState): {
+  readonly total: number;
+  readonly remaining: number;
+  readonly completed: number;
+  readonly progress: number;
+} {
+  const completed = state.todos.filter((todo) => todo.completed).length;
+  const total = state.todos.length;
+  const remaining = total - completed;
+  const progress = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+  return {
+    total,
+    remaining,
+    completed,
+    progress,
+  };
 }
 
 function withServerPost(
