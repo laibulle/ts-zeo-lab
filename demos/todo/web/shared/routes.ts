@@ -3,7 +3,7 @@ import type { Routes } from "./types.js";
 export const routes: Routes = {
   createTodo: "/todos/",
   home: "/",
-  runtime: "/runtime",
+  mutations: "/todos/actions",
   stats: "/stats",
   toggleTodo: (id) => `/todos/${encodeURIComponent(id)}/toggle`,
   deleteTodo: (id) => `/todos/${encodeURIComponent(id)}/delete`,

@@ -1,21 +1,21 @@
 import { TodoComposer } from "../components/todo-composer.js";
 import { TodoList } from "../components/todo-list.js";
-import type { TodoWebRuntime } from "../runtime.js";
+import type { TodoMutationClient } from "../mutations.js";
 import type { Routes, TodoStore } from "../../shared/types.js";
 
 export function TodoPage({
   store,
-  runtime,
+  mutations,
   routes,
 }: {
   readonly store: TodoStore;
-  readonly runtime: TodoWebRuntime;
+  readonly mutations: TodoMutationClient;
   readonly routes: Routes;
 }) {
   return (
     <>
-      <TodoComposer runtime={runtime} action={routes.createTodo} />
-      <TodoList runtime={runtime} store={store} routes={routes} />
+      <TodoComposer mutations={mutations} action={routes.createTodo} />
+      <TodoList mutations={mutations} store={store} routes={routes} />
     </>
   );
 }

@@ -16,7 +16,7 @@ Puis ouvrir:
 http://localhost:3000
 ```
 
-Le serveur HTTP applicatif tourne derriere Vite. Par defaut, Vite ecoute sur `3000` et le backend sur `3001`.
+Le serveur HTTP applicatif ecoute sur `3000` par defaut. En developpement, le client Solid est bundle par Vite en mode watch dans `dist/web/public`, puis servi par le serveur applicatif comme en production.
 
 Avec Bun:
 
@@ -45,13 +45,15 @@ Le projet Xcode est genere depuis `native/project.yml` avec XcodeGen. Le `.xcode
 - `@ts-zero/node-server` pour servir la demo avec Node;
 - `@ts-zero/bun-server` pour servir la meme app avec Bun;
 - `@ts-zero/store` pour l'etat immutable partage entre le serveur et le client;
+- `@ts-zero/mutation` pour les mutations versionnees, les acknowledgements compacts et le fallback snapshot;
 - `@ts-zero/uuid/v7` pour les ids de todos;
 - formulaires HTML classiques;
 - plusieurs pages: liste des todos et statistiques;
 - routes POST sans JavaScript client, gardees comme fallback;
+- mutations JSON inspectables sur `POST /todos/actions`: `version + action`, sans RPC cache;
 - client TSX dans `web/client/client.tsx`, structure en pages et composants;
 - compilation du client demo avec Solid et Vite;
-- Vite pour servir le client TypeScript/TSX de demo;
+- Vite pour bundler le client TypeScript/TSX de demo;
 - SQLite pour persister les todos;
 - app macOS SwiftUI native qui charge un runtime TypeScript dans JavaScriptCore;
 - `@ts-zero/runtime` pour le channel host, les events, les messages et les capabilities partages;
@@ -65,9 +67,10 @@ Le projet Xcode est genere depuis `native/project.yml` avec XcodeGen. Le `.xcode
 - `web/`: couche interface facon Phoenix, avec front, serveur web et contrats partages;
 - `web/server/`: HTTP, SSR et adaptateurs Node/Bun;
 - `web/client/`: entree navigateur, pages et composants interactifs;
+- `web/client/mutations.ts`: client HTTP mince pour `@ts-zero/mutation`;
 - `web/shared/`: contrats partages front/serveur, comme routes et snapshots;
 - `web/server/app.ts`: composition root HTTP, routing et SSR;
-- `web/vite.config.ts`: serveur de developpement client et proxy vers le backend.
+- `web/vite.config.ts`: build client Vite en bundle et chunks.
 - `native/runtime/`: runtime TypeScript partageable execute dans JavaScriptCore via `@ts-zero/runtime`;
 - `native/macos/`: host SwiftUI macOS et implementation des capabilities natives;
 - `native/project.yml`: manifest XcodeGen pour generer le projet Xcode.

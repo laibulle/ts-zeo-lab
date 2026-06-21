@@ -1,0 +1,39 @@
+{
+  "name": "@ts-zero/mutation",
+  "version": "0.0.0",
+  "description": "Zero-dependency versioned mutation protocol helpers for web-standard applications.",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./apply": {
+      "types": "./dist/apply.d.ts",
+      "default": "./dist/apply.js"
+    },
+    "./errors": {
+      "types": "./dist/errors.d.ts",
+      "default": "./dist/errors.js"
+    },
+    "./protocol": {
+      "types": "./dist/protocol.d.ts",
+      "default": "./dist/protocol.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "default": "./dist/types.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "tsc -b --clean",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {}
+}

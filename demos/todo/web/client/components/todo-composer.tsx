@@ -1,11 +1,11 @@
-import type { TodoWebRuntime } from "../runtime.js";
+import type { TodoMutationClient } from "../mutations.js";
 import { createTodoPayload } from "../todo-store.js";
 
 export function TodoComposer({
-  runtime,
+  mutations,
   action,
 }: {
-  readonly runtime: TodoWebRuntime;
+  readonly mutations: TodoMutationClient;
   readonly action: string;
 }) {
   return (
@@ -29,7 +29,7 @@ export function TodoComposer({
           return;
         }
 
-        void runtime.dispatch("create", {
+        void mutations.dispatch("create", {
           id: payload.id,
           title: payload.title,
         }).then(() => {

@@ -1,4 +1,5 @@
 import type { Store } from "@ts-zero/store";
+import type { MutationActionResult, MutationResult, MutationSnapshotResult } from "@ts-zero/mutation/types";
 
 export interface Todo {
   readonly id: string;
@@ -21,10 +22,25 @@ export interface Snapshot {
   readonly state: TodoState;
 }
 
+export type TodoMutationActionType = "createTodo" | "toggleTodo" | "deleteTodo";
+
+export type TodoMutationPayload = Todo | string;
+
+export type TodoMutationActionResult = MutationActionResult<TodoMutationPayload> & {
+  readonly action: {
+    readonly type: TodoMutationActionType;
+    readonly payload?: TodoMutationPayload;
+  };
+};
+
+export type TodoMutationSnapshotResult = MutationSnapshotResult<Snapshot>;
+
+export type TodoRuntimeResult = MutationResult<Snapshot, TodoMutationPayload>;
+
 export interface Routes {
   readonly createTodo: string;
   readonly home: string;
-  readonly runtime: string;
+  readonly mutations: string;
   readonly stats: string;
   readonly toggleTodo: (id: string) => string;
   readonly deleteTodo: (id: string) => string;

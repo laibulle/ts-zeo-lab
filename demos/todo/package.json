@@ -7,7 +7,7 @@
     "build:client": "vite build --config web/vite.config.ts",
     "build:server": "tsc -b",
     "clean": "tsc -b --clean",
-    "dev": "npm run build:server && node dist/web/dev.js",
+    "dev": "npm run build && node dist/web/dev.js",
     "native:build:js": "esbuild native/runtime/todo-native.ts --bundle --format=iife --global-name=TsZeroTodoNativeBundle --outfile=native/dist/runtime.js --target=es2022",
     "native:build:xcode": "npm run native:build:js && npm run native:generate:xcode && xcodebuild -quiet -project native/TsZeroTodo.xcodeproj -scheme TodoNative -configuration Debug -derivedDataPath native/dist/DerivedData build",
     "native:generate:xcode": "cd native && xcodegen generate",
@@ -18,6 +18,7 @@
   "dependencies": {
     "@ts-zero/bun-server": "0.0.0",
     "@ts-zero/http": "0.0.0",
+    "@ts-zero/mutation": "0.0.0",
     "@ts-zero/native-runtime": "0.0.0",
     "@ts-zero/node-server": "0.0.0",
     "@ts-zero/router": "0.0.0",

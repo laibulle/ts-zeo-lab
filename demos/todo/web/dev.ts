@@ -1,8 +1,7 @@
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-const backendPort = process.env.BACKEND_PORT ?? "3001";
-const frontendPort = process.env.PORT ?? process.env.FRONTEND_PORT ?? "3000";
+const port = process.env.PORT ?? "3000";
 const demoRoot = fileURLToPath(new URL("../..", import.meta.url));
 const repositoryRoot = fileURLToPath(new URL("../../../..", import.meta.url));
 
@@ -16,28 +15,22 @@ const demo = spawn("npm", ["exec", "tsc", "--", "-b", "--watch", "--preserveWatc
   stdio: "inherit",
 });
 
+const client = spawn("npm", ["exec", "vite", "--", "build", "--config", "web/vite.config.ts", "--watch"], {
+  cwd: demoRoot,
+  stdio: "inherit",
+});
+
 const backend = spawn(process.execPath, ["--watch", "dist/web/server/node.js"], {
   cwd: demoRoot,
   env: {
     ...process.env,
-    PORT: backendPort,
-    TODO_CLIENT_ENTRY: "/client/client.tsx",
-  },
-  stdio: "inherit",
-});
-
-const vite = spawn("npm", ["exec", "vite", "--", "--config", "web/vite.config.ts", "--host", "127.0.0.1", "--port", frontendPort], {
-  cwd: demoRoot,
-  env: {
-    ...process.env,
-    BACKEND_PORT: backendPort,
-    FRONTEND_PORT: frontendPort,
+    PORT: port,
   },
   stdio: "inherit",
 });
 
 let shuttingDown = false;
-const processes = [packages, demo, backend, vite] as const;
+const processes = [packages, demo, client, backend] as const;
 
 for (const child of processes) {
   child.on("exit", (code) => {

@@ -1,14 +1,14 @@
 import { For } from "solid-js";
-import type { TodoWebRuntime } from "../runtime.js";
+import type { TodoMutationClient } from "../mutations.js";
 import { useStoreState } from "../solid-store.js";
 import type { Routes, Todo, TodoStore } from "../../shared/types.js";
 
 export function TodoList({
-  runtime,
+  mutations,
   store,
   routes,
 }: {
-  readonly runtime: TodoWebRuntime;
+  readonly mutations: TodoMutationClient;
   readonly store: TodoStore;
   readonly routes: Routes;
 }) {
@@ -17,18 +17,18 @@ export function TodoList({
   return (
     <ul>
       <For each={state().todos}>
-        {(todo) => <TodoItem runtime={runtime} routes={routes} todo={todo} />}
+        {(todo) => <TodoItem mutations={mutations} routes={routes} todo={todo} />}
       </For>
     </ul>
   );
 }
 
 function TodoItem({
-  runtime,
+  mutations,
   routes,
   todo,
 }: {
-  readonly runtime: TodoWebRuntime;
+  readonly mutations: TodoMutationClient;
   readonly routes: Routes;
   readonly todo: Todo;
 }) {
@@ -40,7 +40,7 @@ function TodoItem({
         action={routes.toggleTodo(todo.id)}
         onSubmit={(event: SubmitEvent) => {
           event.preventDefault();
-          void runtime.dispatch("toggle", { id: todo.id });
+          void mutations.dispatch("toggle", { id: todo.id });
         }}
       >
         <button class="secondary" type="submit">{todo.completed ? "Reopen" : "Done"}</button>
@@ -50,7 +50,7 @@ function TodoItem({
         action={routes.deleteTodo(todo.id)}
         onSubmit={(event: SubmitEvent) => {
           event.preventDefault();
-          void runtime.dispatch("delete", { id: todo.id });
+          void mutations.dispatch("delete", { id: todo.id });
         }}
       >
         <button class="danger" type="submit">Delete</button>

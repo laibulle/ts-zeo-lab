@@ -3,19 +3,19 @@ import { TodoHeader } from "./components/header.js";
 import { TodoNavigation } from "./components/navigation.js";
 import { StatsPage } from "./pages/stats.js";
 import { TodoPage } from "./pages/todos.js";
-import type { TodoWebRuntime } from "./runtime.js";
+import type { TodoMutationClient } from "./mutations.js";
 import { useStoreState } from "./solid-store.js";
 import type { Routes, TodoStore, UiStore } from "../shared/types.js";
 
 export function TodoApp({
   store,
   uiStore,
-  runtime,
+  mutations,
   routes,
 }: {
   readonly store: TodoStore;
   readonly uiStore: UiStore;
-  readonly runtime: TodoWebRuntime;
+  readonly mutations: TodoMutationClient;
   readonly routes: Routes;
 }) {
   const uiState = useStoreState(uiStore);
@@ -26,7 +26,7 @@ export function TodoApp({
       <TodoNavigation page={uiState().page} uiStore={uiStore} routes={routes} />
       <Show
         when={uiState().page === "stats"}
-        fallback={<TodoPage store={store} runtime={runtime} routes={routes} />}
+        fallback={<TodoPage store={store} mutations={mutations} routes={routes} />}
       >
         <StatsPage store={store} />
       </Show>

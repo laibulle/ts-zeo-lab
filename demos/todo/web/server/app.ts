@@ -4,13 +4,19 @@ import { createApp, html, json, redirect, text } from "@ts-zero/http";
 import { defineRoutes } from "@ts-zero/router";
 import type { App, Context, Handler, HttpMethod } from "@ts-zero/http";
 import type { Router } from "@ts-zero/router";
-import type { HostMessage, RuntimeMessage, Serializable } from "@ts-zero/runtime/types";
+import {
+  createActionResult,
+  createSnapshotResult,
+  getMutationRequest,
+  isVersionCurrent,
+} from "@ts-zero/mutation/protocol";
 import { validate } from "@ts-zero/uuid/format";
 import { v7 } from "@ts-zero/uuid/v7";
 import { createTodoProjection } from "../../application/todo-projection.js";
 import { createTodoUseCases } from "../../application/todo-use-cases.js";
 import type { Todo } from "../../domain/todo.js";
 import { openSqliteTodoRepository } from "../../infrastructure/sqlite-todo-repository.js";
+import type { TodoMutationActionResult, TodoMutationActionType, TodoMutationPayload, TodoRuntimeResult } from "../shared/types.js";
 
 type Page = "todos" | "stats";
 
@@ -40,8 +46,8 @@ export const router = defineRoutes<Handler>((r) => {
     r.get("stats", "/stats", renderStats);
     r.get("client", "/client.mjs", renderClientModule);
     r.get("client.asset", "/assets/:file", serveClientAsset);
-    r.post("runtime", "/runtime", handleRuntimeMessage);
     r.scope("/todos", (r) => {
+      r.post("todos.actions", "/actions", handleTodoAction);
       r.post("todos.create", "/", createTodo);
       r.post("todos.toggle", "/:id/toggle", toggleTodo);
       r.post("todos.delete", "/:id/delete", deleteTodo);
@@ -109,76 +115,74 @@ function deleteTodo({ params }: Context): Response {
   return redirect(router.path("home"));
 }
 
-async function handleRuntimeMessage({ request }: Context): Promise<Response> {
-  const message = await request.json() as RuntimeMessage;
-
-  if (message.kind !== "request" || message.capability !== "todo") {
-    return json(runtimeError(message, "Unsupported runtime message"), { status: 400 });
-  }
-
-  const snapshot = dispatchTodoRuntimeOperation(message.operation, message.payload);
-
-  return json({
-    kind: "response",
-    id: message.id,
-    ok: true,
-    value: snapshot as unknown as Serializable,
-  } satisfies HostMessage);
+async function handleTodoAction({ request }: Context): Promise<Response> {
+  return json(dispatchTodoMutation(await request.json()));
 }
 
-function dispatchTodoRuntimeOperation(operation: string, payload: Serializable | undefined): ReturnType<typeof store.snapshot> {
-  if (operation === "create") {
-    const command = asRecord(payload);
+function dispatchTodoMutation(payload: unknown): TodoRuntimeResult {
+  const request = getMutationRequest(payload);
+  const command = asRecord(request.action.payload);
+  const previousVersion = store.version();
+
+  if (request.action.type === "create") {
     const todo = todoUseCases.createTodo({
       id: command.id,
       title: command.title,
     });
 
-    if (todo !== null) {
-      store.dispatch("createTodo", todo);
+    if (todo === null) {
+      return snapshotResult();
     }
 
-    return store.snapshot();
+    store.dispatch("createTodo", todo);
+    return isVersionCurrent(request, previousVersion)
+      ? actionResult(previousVersion, "createTodo", todo)
+      : snapshotResult();
   }
 
-  if (operation === "toggle") {
-    const command = asRecord(payload);
-
+  if (request.action.type === "toggle") {
     if (todoUseCases.toggleTodo({ id: command.id })) {
       store.dispatch("toggleTodo", command.id);
+      return isVersionCurrent(request, previousVersion)
+        ? actionResult(previousVersion, "toggleTodo", String(command.id))
+        : snapshotResult();
     }
 
-    return store.snapshot();
+    return snapshotResult();
   }
 
-  if (operation === "delete") {
-    const command = asRecord(payload);
-
+  if (request.action.type === "delete") {
     if (todoUseCases.deleteTodo({ id: command.id })) {
       store.dispatch("deleteTodo", command.id);
+      return isVersionCurrent(request, previousVersion)
+        ? actionResult(previousVersion, "deleteTodo", String(command.id))
+        : snapshotResult();
     }
 
-    return store.snapshot();
+    return snapshotResult();
   }
 
-  return store.snapshot();
+  return snapshotResult();
 }
 
-function asRecord(value: Serializable | undefined): Record<string, Serializable | undefined> {
+function actionResult(
+  previousVersion: number,
+  type: TodoMutationActionType,
+  payload: TodoMutationPayload,
+): TodoMutationActionResult {
+  return createActionResult(previousVersion, store.version(), type, payload) as TodoMutationActionResult;
+}
+
+function snapshotResult(): TodoRuntimeResult {
+  return createSnapshotResult(store.snapshot());
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
   if (value === null || value === undefined || typeof value !== "object" || Array.isArray(value)) {
     return {};
   }
 
-  return value as Record<string, Serializable | undefined>;
-}
-
-function runtimeError(message: RuntimeMessage, reason: string): HostMessage {
-  return {
-    kind: "response",
-    id: message.kind === "request" ? message.id : "unknown",
-    ok: false,
-    error: reason,
-  };
+  return value as Record<string, unknown>;
 }
 
 async function readForm(request: Request): Promise<URLSearchParams> {
