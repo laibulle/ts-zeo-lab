@@ -1,0 +1,16 @@
+{
+  "name": "@ts-zero/demo-todo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start:bun": "bun bun.mjs",
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "@ts-zero/bun-server": "0.0.0",
+    "@ts-zero/http": "0.0.0",
+    "@ts-zero/node-server": "0.0.0",
+    "@ts-zero/router": "0.0.0",
+    "@ts-zero/uuid": "0.0.0"
+  }
+}

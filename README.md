@@ -19,6 +19,10 @@ Objectif: produire des packages TypeScript petits, lisibles, rapides, securises,
 - `@ts-zero/uuid`: generation et manipulation d'UUID, avec un contrat proche du package `uuid`.
 - `@ts-zero/querystring`: parse/stringify de query strings imbriquees, avec un noyau strict inspire de `qs`.
 - `@ts-zero/multipart`: encodage `multipart/form-data` en memoire, avec un noyau strict inspire de `form-data`.
+- `@ts-zero/http`: fondation HTTP Web Standard `Request` / `Response` pour runtimes serverless et edge.
+- `@ts-zero/node-server`: adaptateur Node HTTP pour handlers Web Standard.
+- `@ts-zero/bun-server`: adaptateur Bun.serve pour handlers Web Standard.
+- `@ts-zero/router`: routeur explicite `defineRoutes`, manifest public, scopes et pipelines.
 
 ## Commandes
 
@@ -28,6 +32,8 @@ npm run build
 npm test
 npm run check
 npm run bench:uuid:compare
+npm run demo:todo
+npm run demo:todo:bun
 ```
 
 Les benchmarks de comparaison installent les references dans un dossier temporaire hors du depot; elles ne sont pas ajoutees aux dependances.
@@ -41,6 +47,10 @@ npm run check
 ```
 
 Ce gate construit les packages, lance les tests, verifie les subpaths publics, les invariants de securite, le tree-checking de base, et effectue un `npm pack --dry-run`.
+
+## Demos
+
+- `demos/todo`: todo app rendue cote serveur avec `@ts-zero/http`, `@ts-zero/node-server`, `@ts-zero/bun-server` et `@ts-zero/uuid/v7`.
 
 ## Tree-Shaking Top Tier
 

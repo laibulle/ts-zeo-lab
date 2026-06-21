@@ -51,3 +51,9 @@ npm run bench:uuid:compare
 For query string changes, keep the contract strict: reject ambiguous structures, preserve null-prototype parsed objects, and verify `./parse` and `./stringify` remain independently tree-shakable.
 
 For multipart changes, keep the contract in-memory and strict: no filesystem, no streams, no MIME database, no weak random fallback, and verify `./parts`, `./encode`, and `./boundary` remain independently tree-shakable.
+
+For HTTP changes, keep the core runtime-agnostic: Web Standard `Request` / `Response`, no Node-specific APIs, no filesystem routing, no body parsing magic, and verify `./app`, `./responses`, and `./errors` remain independently tree-shakable.
+
+For runtime server adapters, keep Node and Bun isolated in separate packages. `@ts-zero/node-server` may import `node:*`; `@ts-zero/bun-server` must not. Neither adapter should leak back into `@ts-zero/http`.
+
+For router changes, keep `defineRoutes` explicit and decorator-free. File-based routing, React adapters, and code generation belong in separate optional packages, not in `@ts-zero/router`.
