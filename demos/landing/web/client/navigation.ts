@@ -6,7 +6,7 @@ export function createUiStore(page: Page): UiStore {
     state: { page },
     transitions: {
       navigate: (state, nextPage: unknown) => {
-        if (nextPage !== "landing" && nextPage !== "todos" && nextPage !== "stats") {
+        if (nextPage !== "landing" && nextPage !== "counter" && nextPage !== "todos" && nextPage !== "stats") {
           return state;
         }
 
@@ -19,6 +19,10 @@ export function createUiStore(page: Page): UiStore {
 export function getPageFromLocation(knownRoutes: Routes): Page {
   if (location.pathname === knownRoutes.stats) {
     return "stats";
+  }
+
+  if (location.pathname === knownRoutes.counter) {
+    return "counter";
   }
 
   if (location.pathname === knownRoutes.todos) {

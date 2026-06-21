@@ -54,12 +54,12 @@ Ce gate construit les packages, lance les tests, verifie les subpaths publics, l
 
 ## Demos
 
-- `demos/landing`: landing SSR avec demos integrees, dont une todo app avec `@ts-zero/http`, `@ts-zero/node-server`, `@ts-zero/bun-server`, `@ts-zero/router`, `@ts-zero/store` et `@ts-zero/uuid/v7`.
+- `demos/landing`: landing SSR avec demos integrees, dont un counter distribue HTTP/SSE, une todo app avec `@ts-zero/http`, `@ts-zero/node-server`, `@ts-zero/bun-server`, `@ts-zero/router`, `@ts-zero/store` et `@ts-zero/uuid/v7`.
 
 La landing est deployable:
 
-- sur Vercel via `vercel.json`, avec `api/index.ts` comme Web Function et `TODO_REPOSITORY=memory`;
-- en conteneur Bun multi-stage avec `demos/landing/Dockerfile`.
+- sur Vercel via `vercel.json`, avec `api/index.ts` comme Web Function, `TODO_REPOSITORY=memory` et counter en replay serverless;
+- en conteneur Bun multi-stage avec `demos/landing/Dockerfile`, SQLite persistant et counter live SSE.
 
 ## Tree-Shaking Top Tier
 

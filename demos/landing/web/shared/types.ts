@@ -11,7 +11,11 @@ export interface TodoState {
   readonly todos: readonly Todo[];
 }
 
-export type Page = "landing" | "todos" | "stats";
+export interface CounterState {
+  readonly value: number;
+}
+
+export type Page = "landing" | "counter" | "todos" | "stats";
 
 export interface UiState {
   readonly page: Page;
@@ -20,6 +24,16 @@ export interface UiState {
 export interface Snapshot {
   readonly version: number;
   readonly state: TodoState;
+}
+
+export interface CounterSnapshot {
+  readonly version: number;
+  readonly state: CounterState;
+}
+
+export interface CounterBootstrap {
+  readonly snapshot: CounterSnapshot;
+  readonly streams: boolean;
 }
 
 export type TodoMutationActionType = "createTodo" | "toggleTodo" | "deleteTodo";
@@ -37,7 +51,23 @@ export type TodoMutationSnapshotResult = MutationSnapshotResult<Snapshot>;
 
 export type TodoRuntimeResult = MutationResult<Snapshot, TodoMutationPayload>;
 
+export type CounterMutationActionType = "incrementCounter" | "resetCounter";
+
+export type CounterMutationPayload = number;
+
+export type CounterMutationActionResult = MutationActionResult<CounterMutationPayload> & {
+  readonly action: {
+    readonly type: CounterMutationActionType;
+    readonly payload?: CounterMutationPayload;
+  };
+};
+
+export type CounterRuntimeResult = MutationResult<CounterSnapshot, CounterMutationPayload>;
+
 export interface Routes {
+  readonly counter: string;
+  readonly counterEvents: string;
+  readonly counterMutations: string;
   readonly createTodo: string;
   readonly home: string;
   readonly mutations: string;
@@ -59,6 +89,10 @@ export interface CreateTodoPayload {
 
 export type TodoStore = Store<TodoState>;
 
+export type CounterStore = Store<CounterState>;
+
 export type UiStore = Store<UiState>;
 
 export type TodoRuntimeOperation = "create" | "toggle" | "delete";
+
+export type CounterRuntimeOperation = "increment" | "reset";

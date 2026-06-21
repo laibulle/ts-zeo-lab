@@ -11,9 +11,15 @@ export function TodoHeader({ page, store }: { readonly page: Page; readonly stor
     <header>
       <div>
         <p class="eyebrow">ts-zero demo lab</p>
-        <h1>{page === "landing" ? "ts-zero landing" : "Todo demo"}</h1>
+        <h1>{page === "landing" ? "ts-zero landing" : page === "counter" ? "Distributed counter" : "Todo demo"}</h1>
       </div>
-      <div class="count">{page === "landing" ? "SSR, client navigation, stores, mutations, native runtime" : label()}</div>
+      <div class="count">
+        {page === "landing"
+          ? "SSR, client navigation, stores, mutations, native runtime"
+          : page === "counter"
+            ? "Versioned state, compact actions, live stream when the runtime allows it"
+            : label()}
+      </div>
     </header>
   );
 }

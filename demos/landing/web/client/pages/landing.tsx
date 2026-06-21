@@ -25,6 +25,11 @@ export function LandingPage({
       </section>
 
       <section class="demo-grid" aria-label="Available demos">
+        <a class="demo-tile" href={routes.counter} onClick={navigateTo(uiStore, "counter", routes.counter)}>
+          <span class="demo-kicker">distributed</span>
+          <strong>Counter runtime</strong>
+          <span>Versioned state, compact mutations and live SSE when hosted on a long-running runtime.</span>
+        </a>
         <a class="demo-tile" href={routes.todos} onClick={navigateTo(uiStore, "todos", routes.todos)}>
           <span class="demo-kicker">interactive</span>
           <strong>Todo app</strong>

@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 
 import { createApp, html, json, redirect, text } from "@ts-zero/http";
 import { defineRoutes } from "@ts-zero/router";
+import { createStore } from "@ts-zero/store/create";
 import type { App, Context, Handler, HttpMethod } from "@ts-zero/http";
 import type { Router } from "@ts-zero/router";
 import {
@@ -16,11 +17,24 @@ import { createTodoProjection } from "../../application/todo-projection.js";
 import { createTodoUseCases } from "../../application/todo-use-cases.js";
 import type { Todo } from "../../domain/todo.js";
 import { openTodoRepository } from "../../infrastructure/todo-repository.js";
-import type { Page, TodoMutationActionResult, TodoMutationActionType, TodoMutationPayload, TodoRuntimeResult } from "../shared/types.js";
+import type {
+  CounterMutationActionResult,
+  CounterMutationActionType,
+  CounterRuntimeResult,
+  CounterState,
+  Page,
+  TodoMutationActionResult,
+  TodoMutationActionType,
+  TodoMutationPayload,
+  TodoRuntimeResult,
+} from "../shared/types.js";
 
 const clientFile = new URL("../public/client.mjs", import.meta.url);
 const publicDirectory = new URL("../public/", import.meta.url);
 const clientEntry = process.env.TODO_CLIENT_ENTRY ?? "/client.mjs";
+const counterStreamsEnabled = process.env.COUNTER_STREAMS !== "0" && process.env.VERCEL !== "1";
+const counterClients = new Set<ReadableStreamDefaultController<Uint8Array>>();
+const textEncoder = new TextEncoder();
 const todoRepository = await openTodoRepository();
 const todoUseCases = createTodoUseCases({
   repository: todoRepository,
@@ -33,6 +47,20 @@ todoUseCases.seed();
 const store = createTodoProjection({
   todos: todoUseCases.listTodos(),
 });
+const counterStore = createStore<CounterState>({
+  freeze: true,
+  state: {
+    value: 0,
+  },
+  transitions: {
+    incrementCounter: (state, delta: unknown) => ({
+      value: state.value + normalizeCounterDelta(delta),
+    }),
+    resetCounter: () => ({
+      value: 0,
+    }),
+  },
+});
 
 export const app = createApp();
 
@@ -41,10 +69,15 @@ export const router = defineRoutes<Handler>((r) => {
 
   r.scope("/", { pipe: "browser" }, (r) => {
     r.get("home", "/", renderHome);
+    r.get("counter", "/counter", renderCounter);
     r.get("todos", "/todos", renderTodos);
     r.get("stats", "/stats", renderStats);
     r.get("client", "/client.mjs", renderClientModule);
     r.get("client.asset", "/assets/:file", serveClientAsset);
+    r.scope("/counter", (r) => {
+      r.get("counter.events", "/events", handleCounterEvents);
+      r.post("counter.actions", "/actions", handleCounterAction);
+    });
     r.scope("/todos", (r) => {
       r.post("todos.actions", "/actions", handleTodoAction);
       r.post("todos.create", "/", createTodo);
@@ -68,6 +101,10 @@ function renderHome(): Response {
 
 function renderTodos(): Response {
   return html(renderPage("todos"));
+}
+
+function renderCounter(): Response {
+  return html(renderPage("counter"));
 }
 
 function renderStats(): Response {
@@ -120,6 +157,114 @@ function deleteTodo({ params }: Context): Response {
 
 async function handleTodoAction({ request }: Context): Promise<Response> {
   return json(dispatchTodoMutation(await request.json()));
+}
+
+async function handleCounterAction({ request }: Context): Promise<Response> {
+  if (!isJsonRequest(request)) {
+    const form = await readForm(request);
+    const previousVersion = counterStore.version();
+
+    if (form.get("delta") === "-1") {
+      counterStore.dispatch("incrementCounter", -1);
+      broadcastCounterResult(createActionResult(previousVersion, counterStore.version(), "incrementCounter", -1) as CounterMutationActionResult);
+      return redirect(router.path("counter"));
+    }
+
+    if (form.get("delta") === "1") {
+      counterStore.dispatch("incrementCounter", 1);
+      broadcastCounterResult(createActionResult(previousVersion, counterStore.version(), "incrementCounter", 1) as CounterMutationActionResult);
+      return redirect(router.path("counter"));
+    }
+
+    counterStore.dispatch("resetCounter", 0);
+    broadcastCounterResult(createActionResult(previousVersion, counterStore.version(), "resetCounter", 0) as CounterMutationActionResult);
+    return redirect(router.path("counter"));
+  }
+
+  return json(dispatchCounterMutation(await request.json()));
+}
+
+function handleCounterEvents(): Response {
+  if (!counterStreamsEnabled) {
+    return text("Counter streams are disabled in this runtime", { status: 409 });
+  }
+
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      counterClients.add(controller);
+      controller.enqueue(encodeCounterEvent(createSnapshotResult(counterStore.snapshot())));
+    },
+    cancel() {
+      // The controller is removed on the next failed enqueue if the stream is cancelled.
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "cache-control": "no-store",
+      "content-type": "text/event-stream; charset=utf-8",
+      "x-accel-buffering": "no",
+    },
+  });
+}
+
+function dispatchCounterMutation(payload: unknown): CounterRuntimeResult {
+  const request = getMutationRequest(payload);
+  const previousVersion = counterStore.version();
+
+  if (request.action.type === "increment") {
+    const delta = normalizeCounterDelta(request.action.payload);
+    counterStore.dispatch("incrementCounter", delta);
+    return counterResult(previousVersion, "incrementCounter", delta, request.version);
+  }
+
+  if (request.action.type === "reset") {
+    counterStore.dispatch("resetCounter", 0);
+    return counterResult(previousVersion, "resetCounter", 0, request.version);
+  }
+
+  return counterSnapshotResult();
+}
+
+function counterResult(
+  previousVersion: number,
+  type: CounterMutationActionType,
+  payload: number,
+  requestVersion: number,
+): CounterRuntimeResult {
+  const result = requestVersion === previousVersion
+    ? createActionResult(previousVersion, counterStore.version(), type, payload) as CounterMutationActionResult
+    : counterSnapshotResult();
+
+  if (counterStreamsEnabled && result.kind === "action") {
+    broadcastCounterResult(result);
+  }
+
+  return result;
+}
+
+function counterSnapshotResult(): CounterRuntimeResult {
+  return createSnapshotResult(counterStore.snapshot());
+}
+
+function broadcastCounterResult(result: CounterRuntimeResult): void {
+  const message = encodeCounterEvent(result);
+
+  for (const client of Array.from(counterClients)) {
+    try {
+      client.enqueue(message);
+    } catch {
+      counterClients.delete(client);
+    }
+  }
+}
+
+function encodeCounterEvent(result: CounterRuntimeResult): Uint8Array {
+  return textEncoder.encode(`event: counter\ndata: ${JSON.stringify(result)}\n\n`);
+}
+
+function isJsonRequest(request: Request): boolean {
+  return request.headers.get("content-type")?.includes("application/json") === true;
 }
 
 function dispatchTodoMutation(payload: unknown): TodoRuntimeResult {
@@ -197,6 +342,10 @@ function renderPage(page: Page): string {
   const { todos } = store.getState();
   const remaining = todos.filter((todo) => !todo.completed).length;
   const snapshot = JSON.stringify(store.snapshot()).replaceAll("<", "\\u003c");
+  const counterBootstrap = JSON.stringify({
+    snapshot: counterStore.snapshot(),
+    streams: counterStreamsEnabled,
+  }).replaceAll("<", "\\u003c");
 
   return `<!doctype html>
 <html lang="en">
@@ -331,7 +480,7 @@ function renderPage(page: Page): string {
 
       .demo-grid {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 12px;
       }
 
@@ -579,6 +728,113 @@ function renderPage(page: Page): string {
         accent-color: var(--accent);
       }
 
+      .counter-demo {
+        display: grid;
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+        gap: 12px;
+      }
+
+      .counter-panel,
+      .counter-flow,
+      .transport-log {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+      }
+
+      .counter-panel {
+        min-height: 340px;
+        padding: 22px;
+      }
+
+      .counter-value {
+        margin: 22px 0 8px;
+        font-size: 104px;
+        font-weight: 800;
+        line-height: 0.9;
+      }
+
+      .counter-version {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .counter-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 28px;
+      }
+
+      .counter-flow {
+        display: grid;
+        gap: 10px;
+        padding: 14px;
+      }
+
+      .counter-flow div {
+        display: grid;
+        grid-template-columns: 32px minmax(0, 1fr);
+        gap: 10px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(5, 7, 13, 0.42);
+      }
+
+      .counter-flow span {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border: 1px solid rgba(101, 228, 255, 0.38);
+        border-radius: 999px;
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .counter-flow strong,
+      .counter-flow p {
+        grid-column: 2;
+      }
+
+      .counter-flow p {
+        margin-top: -6px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .transport-log {
+        grid-column: 1 / -1;
+        padding: 16px;
+      }
+
+      .transport-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+
+      .transport-heading span {
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .transport-log p {
+        padding: 9px 0;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 13px;
+      }
+
       @media (max-width: 760px) {
         main {
           width: min(100% - 20px, 720px);
@@ -590,6 +846,7 @@ function renderPage(page: Page): string {
         .demo-grid,
         .docs,
         .runtime-strip,
+        .counter-demo,
         .composer,
         li,
         .stats {
@@ -609,6 +866,10 @@ function renderPage(page: Page): string {
         h2 {
           font-size: 44px;
         }
+
+        .transport-log {
+          grid-column: auto;
+        }
       }
     </style>
   </head>
@@ -626,6 +887,7 @@ function renderPage(page: Page): string {
       ${renderContent(page, todos)}
     </main>
     <script id="initial-state" type="application/json">${snapshot}</script>
+    <script id="initial-counter-state" type="application/json">${counterBootstrap}</script>
     <script type="module" src="${escapeHtml(clientEntry)}"></script>
   </body>
 </html>`;
@@ -648,6 +910,7 @@ function renderTodo(todo: Todo): string {
 function renderNavigation(page: Page): string {
   return `<nav aria-label="Demo navigation">
   <a class="${page === "landing" ? "active" : ""}" href="${router.path("home")}">Overview</a>
+  <a class="${page === "counter" ? "active" : ""}" href="${router.path("counter")}">Counter</a>
   <a class="${page === "todos" ? "active" : ""}" href="${router.path("todos")}">Todos</a>
   <a class="${page === "stats" ? "active" : ""}" href="${router.path("stats")}">Stats</a>
 </nav>`;
@@ -656,6 +919,10 @@ function renderNavigation(page: Page): string {
 function renderContent(page: Page, todos: readonly Todo[]): string {
   if (page === "landing") {
     return renderLandingContent();
+  }
+
+  if (page === "counter") {
+    return renderCounterContent();
   }
 
   if (page === "stats") {
@@ -676,6 +943,11 @@ function renderLandingContent(): string {
 </section>
 
 <section class="demo-grid" aria-label="Available demos">
+  <a class="demo-tile" href="${router.path("counter")}">
+    <span class="demo-kicker">distributed</span>
+    <strong>Counter runtime</strong>
+    <span>Versioned state, compact mutations and live SSE when hosted on a long-running runtime.</span>
+  </a>
   <a class="demo-tile" href="${router.path("todos")}">
     <span class="demo-kicker">interactive</span>
     <strong>Todo app</strong>
@@ -720,6 +992,45 @@ function renderLandingContent(): string {
   <div><span>Container</span><strong>Bun + SQLite</strong></div>
   <div><span>Native</span><strong>JavaScriptCore host</strong></div>
 </section>`;
+}
+
+function renderCounterContent(): string {
+  const { value } = counterStore.getState();
+  const mode = counterStreamsEnabled ? "live runtime" : "serverless-safe";
+
+  return `<section class="counter-demo" aria-label="Distributed counter">
+  <div class="counter-panel">
+    <p class="eyebrow">distributed state</p>
+    <div class="counter-value">${value}</div>
+    <div class="counter-version">server version ${counterStore.version()}</div>
+    <div class="counter-actions">
+      <form method="post" action="${router.path("counter.actions")}">
+        <input type="hidden" name="delta" value="1">
+        <button type="submit">+1</button>
+      </form>
+      <form method="post" action="${router.path("counter.actions")}">
+        <input type="hidden" name="delta" value="-1">
+        <button class="secondary" type="submit">-1</button>
+      </form>
+      <form method="post" action="${router.path("counter.actions")}">
+        <button class="danger" type="submit">Reset</button>
+      </form>
+    </div>
+  </div>
+  <div class="counter-flow">
+    <div><span>1</span><strong>Client action</strong><p>POST sends version + action.</p></div>
+    <div><span>2</span><strong>Server state</strong><p>The server applies the action if the version is current.</p></div>
+    <div><span>3</span><strong>${counterStreamsEnabled ? "Live patch" : "Replay result"}</strong><p>${counterStreamsEnabled ? "SSE broadcasts compact updates to peers." : "Serverless returns the protocol result to this request."}</p></div>
+  </div>
+  <div class="transport-log">
+    <div class="transport-heading"><strong>Transport log</strong><span>${mode}</span></div>
+    <p>${counterStreamsEnabled ? "SSE stream available in this runtime" : "Serverless mode: protocol replay without durable stream"}</p>
+  </div>
+</section>`;
+}
+
+function normalizeCounterDelta(delta: unknown): number {
+  return delta === -1 ? -1 : 1;
 }
 
 function renderTodosContent(todos: readonly Todo[]): string {

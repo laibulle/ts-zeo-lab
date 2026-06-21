@@ -15,6 +15,9 @@ export function TodoNavigation({
       <a class={page === "landing" ? "active" : ""} href={routes.home} onClick={navigateTo(uiStore, "landing", routes.home)}>
         Overview
       </a>
+      <a class={page === "counter" ? "active" : ""} href={routes.counter} onClick={navigateTo(uiStore, "counter", routes.counter)}>
+        Counter
+      </a>
       <a class={page === "todos" ? "active" : ""} href={routes.todos} onClick={navigateTo(uiStore, "todos", routes.todos)}>
         Todos
       </a>

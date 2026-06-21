@@ -3,6 +3,7 @@
   "buildCommand": "npm run deploy:landing:vercel:build",
   "outputDirectory": "demos/landing/dist/web/public",
   "env": {
+    "COUNTER_STREAMS": "0",
     "TODO_REPOSITORY": "memory"
   },
   "functions": {
