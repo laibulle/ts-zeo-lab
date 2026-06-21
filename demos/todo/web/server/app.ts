@@ -14,26 +14,8 @@ import { openSqliteTodoRepository } from "../../infrastructure/sqlite-todo-repos
 
 type Page = "todos" | "stats";
 
-const moduleFiles = new Map<string, URL>([
-  ["@ts-zero/html/actions.js", new URL("../../../../../packages/html/dist/actions.js", import.meta.url)],
-  ["@ts-zero/html/bindings.js", new URL("../../../../../packages/html/dist/bindings.js", import.meta.url)],
-  ["@ts-zero/html/elements.js", new URL("../../../../../packages/html/dist/elements.js", import.meta.url)],
-  ["@ts-zero/html/errors.js", new URL("../../../../../packages/html/dist/errors.js", import.meta.url)],
-  ["@ts-zero/html/jsx-runtime.js", new URL("../../../../../packages/html/dist/jsx-runtime.js", import.meta.url)],
-  ["@ts-zero/html/mount.js", new URL("../../../../../packages/html/dist/mount.js", import.meta.url)],
-  ["@ts-zero/html/types.js", new URL("../../../../../packages/html/dist/types.js", import.meta.url)],
-  ["@ts-zero/store/create.js", new URL("../../../../../packages/store/dist/create.js", import.meta.url)],
-  ["@ts-zero/store/errors.js", new URL("../../../../../packages/store/dist/errors.js", import.meta.url)],
-  ["@ts-zero/store/freeze.js", new URL("../../../../../packages/store/dist/freeze.js", import.meta.url)],
-  ["@ts-zero/store/snapshot.js", new URL("../../../../../packages/store/dist/snapshot.js", import.meta.url)],
-  ["@ts-zero/store/types.js", new URL("../../../../../packages/store/dist/types.js", import.meta.url)],
-  ["@ts-zero/runtime/errors.js", new URL("../../../../../packages/runtime/dist/errors.js", import.meta.url)],
-  ["@ts-zero/runtime/runtime.js", new URL("../../../../../packages/runtime/dist/runtime.js", import.meta.url)],
-  ["@ts-zero/runtime/serializable.js", new URL("../../../../../packages/runtime/dist/serializable.js", import.meta.url)],
-  ["@ts-zero/runtime/types.js", new URL("../../../../../packages/runtime/dist/types.js", import.meta.url)],
-]);
-
-const clientFile = new URL("../client/client.js", import.meta.url);
+const clientFile = new URL("../public/client.mjs", import.meta.url);
+const publicDirectory = new URL("../public/", import.meta.url);
 const clientEntry = process.env.TODO_CLIENT_ENTRY ?? "/client.mjs";
 const todoRepository = await openSqliteTodoRepository();
 const todoUseCases = createTodoUseCases({
@@ -57,9 +39,7 @@ export const router = defineRoutes<Handler>((r) => {
     r.get("home", "/", renderHome);
     r.get("stats", "/stats", renderStats);
     r.get("client", "/client.mjs", renderClientModule);
-    r.get("html.module", "/modules/@ts-zero/html/:file", serveHtmlModule);
-    r.get("runtime.module", "/modules/@ts-zero/runtime/:file", serveRuntimeModule);
-    r.get("store.module", "/modules/@ts-zero/store/:file", serveStoreModule);
+    r.get("client.asset", "/assets/:file", serveClientAsset);
     r.post("runtime", "/runtime", handleRuntimeMessage);
     r.scope("/todos", (r) => {
       r.post("todos.create", "/", createTodo);
@@ -89,16 +69,14 @@ async function renderClientModule(): Promise<Response> {
   return javascript(await readFile(clientFile, "utf8"));
 }
 
-async function serveHtmlModule({ params }: Context): Promise<Response> {
-  return serveModule(`@ts-zero/html/${params.file}`);
-}
+async function serveClientAsset({ params }: Context): Promise<Response> {
+  const file = safeAssetFile(params.file);
 
-async function serveRuntimeModule({ params }: Context): Promise<Response> {
-  return serveModule(`@ts-zero/runtime/${params.file}`);
-}
+  if (file === null) {
+    return text("Not Found", { status: 404 });
+  }
 
-async function serveStoreModule({ params }: Context): Promise<Response> {
-  return serveModule(`@ts-zero/store/${params.file}`);
+  return staticAsset(await readFile(file), contentTypeFor(file.pathname));
 }
 
 async function createTodo({ request }: Context): Promise<Response> {
@@ -428,7 +406,6 @@ function renderPage(page: Page): string {
       ${page === "stats" ? renderStatsContent(todos) : renderTodosContent(todos)}
     </main>
     <script id="initial-state" type="application/json">${snapshot}</script>
-    ${renderClientImports()}
     <script type="module" src="${escapeHtml(clientEntry)}"></script>
   </body>
 </html>`;
@@ -491,16 +468,6 @@ function escapeHtml(value: string): string {
     .replaceAll('"', "&quot;");
 }
 
-async function serveModule(specifier: string): Promise<Response> {
-  const file = moduleFiles.get(specifier);
-
-  if (file === undefined) {
-    return text("Not Found", { status: 404 });
-  }
-
-  return javascript(await readFile(file, "utf8"));
-}
-
 function javascript(body: string): Response {
   return new Response(body, {
     headers: {
@@ -510,24 +477,31 @@ function javascript(body: string): Response {
   });
 }
 
-function renderImportMap(): string {
-  return JSON.stringify({
-    imports: {
-      "@ts-zero/html/actions": "/modules/@ts-zero/html/actions.js",
-      "@ts-zero/html/bindings": "/modules/@ts-zero/html/bindings.js",
-      "@ts-zero/html/elements": "/modules/@ts-zero/html/elements.js",
-      "@ts-zero/html/jsx-runtime": "/modules/@ts-zero/html/jsx-runtime.js",
-      "@ts-zero/html/mount": "/modules/@ts-zero/html/mount.js",
-      "@ts-zero/runtime/runtime": "/modules/@ts-zero/runtime/runtime.js",
-      "@ts-zero/store/create": "/modules/@ts-zero/store/create.js",
+function staticAsset(body: BodyInit, contentType: string): Response {
+  return new Response(body, {
+    headers: {
+      "content-type": contentType,
+      "cache-control": "no-store",
     },
   });
 }
 
-function renderClientImports(): string {
-  if (clientEntry !== "/client.mjs") {
-    return "";
+function safeAssetFile(file: string): URL | null {
+  if (file.includes("/") || file.includes("\\") || file.includes("..")) {
+    return null;
   }
 
-  return `<script type="importmap">${renderImportMap()}</script>`;
+  return new URL(`assets/${file}`, publicDirectory);
+}
+
+function contentTypeFor(pathname: string): string {
+  if (pathname.endsWith(".css")) {
+    return "text/css; charset=utf-8";
+  }
+
+  if (pathname.endsWith(".map")) {
+    return "application/json; charset=utf-8";
+  }
+
+  return "text/javascript; charset=utf-8";
 }

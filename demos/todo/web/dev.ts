@@ -1,9 +1,23 @@
 import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 const backendPort = process.env.BACKEND_PORT ?? "3001";
 const frontendPort = process.env.PORT ?? process.env.FRONTEND_PORT ?? "3000";
+const demoRoot = fileURLToPath(new URL("../..", import.meta.url));
+const repositoryRoot = fileURLToPath(new URL("../../../..", import.meta.url));
 
-const backend = spawn(process.execPath, ["dist/web/server/node.js"], {
+const packages = spawn("npm", ["run", "build", "--", "--watch", "--preserveWatchOutput"], {
+  cwd: repositoryRoot,
+  stdio: "inherit",
+});
+
+const demo = spawn("npm", ["exec", "tsc", "--", "-b", "--watch", "--preserveWatchOutput"], {
+  cwd: demoRoot,
+  stdio: "inherit",
+});
+
+const backend = spawn(process.execPath, ["--watch", "dist/web/server/node.js"], {
+  cwd: demoRoot,
   env: {
     ...process.env,
     PORT: backendPort,
@@ -13,6 +27,7 @@ const backend = spawn(process.execPath, ["dist/web/server/node.js"], {
 });
 
 const vite = spawn("npm", ["exec", "vite", "--", "--config", "web/vite.config.ts", "--host", "127.0.0.1", "--port", frontendPort], {
+  cwd: demoRoot,
   env: {
     ...process.env,
     BACKEND_PORT: backendPort,
@@ -22,27 +37,29 @@ const vite = spawn("npm", ["exec", "vite", "--", "--config", "web/vite.config.ts
 });
 
 let shuttingDown = false;
+const processes = [packages, demo, backend, vite] as const;
 
-backend.on("exit", (code) => {
-  if (!shuttingDown) {
-    shuttingDown = true;
-    vite.kill();
-    process.exit(code ?? 1);
-  }
-});
-
-vite.on("exit", (code) => {
-  if (!shuttingDown) {
-    shuttingDown = true;
-    backend.kill();
-    process.exit(code ?? 1);
-  }
-});
+for (const child of processes) {
+  child.on("exit", (code) => {
+    if (!shuttingDown) {
+      shutdown();
+      process.exit(code ?? 1);
+    }
+  });
+}
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {
-    shuttingDown = true;
-    backend.kill(signal);
-    vite.kill(signal);
+    shutdown(signal);
   });
+}
+
+function shutdown(signal: NodeJS.Signals = "SIGTERM"): void {
+  shuttingDown = true;
+
+  for (const child of processes) {
+    if (!child.killed) {
+      child.kill(signal);
+    }
+  }
 }
