@@ -11,6 +11,12 @@ import {
   getMutationRequest,
   isVersionCurrent,
 } from "@ts-zero/mutation/protocol";
+import {
+  createReconcileAcceptedResult,
+  createReconcileSnapshotResult,
+  getReconcileRequest,
+} from "@ts-zero/mutation/reconcile";
+import type { ReconcileResult, RejectedMutation } from "@ts-zero/mutation/types";
 import { validate } from "@ts-zero/uuid/format";
 import { v7 } from "@ts-zero/uuid/v7";
 import { createTodoProjection } from "../../application/todo-projection.js";
@@ -77,6 +83,7 @@ export const router = defineRoutes<Handler>((r) => {
     r.scope("/counter", (r) => {
       r.get("counter.events", "/events", handleCounterEvents);
       r.post("counter.actions", "/actions", handleCounterAction);
+      r.post("counter.reconcile", "/reconcile", handleCounterReconcile);
     });
     r.scope("/todos", (r) => {
       r.post("todos.actions", "/actions", handleTodoAction);
@@ -184,6 +191,10 @@ async function handleCounterAction({ request }: Context): Promise<Response> {
   return json(dispatchCounterMutation(await request.json()));
 }
 
+async function handleCounterReconcile({ request }: Context): Promise<Response> {
+  return json(reconcileCounterMutations(await request.json()));
+}
+
 function handleCounterEvents(): Response {
   if (!counterStreamsEnabled) {
     return text("Counter streams are disabled in this runtime", { status: 409 });
@@ -224,6 +235,55 @@ function dispatchCounterMutation(payload: unknown): CounterRuntimeResult {
   }
 
   return counterSnapshotResult();
+}
+
+function reconcileCounterMutations(payload: unknown): ReconcileResult {
+  const request = getReconcileRequest(payload);
+  const startVersion = counterStore.version();
+  const accepted: string[] = [];
+  const rejected: RejectedMutation[] = [];
+
+  for (const pending of request.actions) {
+    if (pending.action.type === "increment") {
+      const previousVersion = counterStore.version();
+      const delta = normalizeCounterDelta(pending.action.payload);
+      counterStore.dispatch("incrementCounter", delta);
+      accepted.push(pending.id);
+      broadcastCounterResult(createActionResult(previousVersion, counterStore.version(), "incrementCounter", delta) as CounterMutationActionResult);
+      continue;
+    }
+
+    if (pending.action.type === "reset") {
+      if (pending.baseVersion !== counterStore.version()) {
+        rejected.push({
+          id: pending.id,
+          reason: "reset requires the current server version",
+        });
+        continue;
+      }
+
+      const previousVersion = counterStore.version();
+      counterStore.dispatch("resetCounter", 0);
+      accepted.push(pending.id);
+      broadcastCounterResult(createActionResult(previousVersion, counterStore.version(), "resetCounter", 0) as CounterMutationActionResult);
+      continue;
+    }
+
+    rejected.push({
+      id: pending.id,
+      reason: "unknown action",
+    });
+  }
+
+  if (rejected.length !== 0 || startVersion !== request.lastSeenVersion) {
+    return createReconcileSnapshotResult({
+      snapshot: counterStore.snapshot(),
+      accepted,
+      rejected,
+    });
+  }
+
+  return createReconcileAcceptedResult(counterStore.version(), accepted);
 }
 
 function counterResult(
@@ -736,6 +796,7 @@ function renderPage(page: Page): string {
 
       .counter-panel,
       .counter-flow,
+      .offline-queue,
       .transport-log {
         border: 1px solid var(--line);
         border-radius: 8px;
@@ -812,6 +873,11 @@ function renderPage(page: Page): string {
         padding: 16px;
       }
 
+      .offline-queue {
+        grid-column: 1 / -1;
+        padding: 16px;
+      }
+
       .transport-heading {
         display: flex;
         align-items: center;
@@ -828,6 +894,14 @@ function renderPage(page: Page): string {
       }
 
       .transport-log p {
+        padding: 9px 0;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 13px;
+      }
+
+      .offline-queue p {
         padding: 9px 0;
         border-top: 1px solid var(--line);
         color: var(--muted);
@@ -868,6 +942,10 @@ function renderPage(page: Page): string {
         }
 
         .transport-log {
+          grid-column: auto;
+        }
+
+        .offline-queue {
           grid-column: auto;
         }
       }
@@ -1025,6 +1103,10 @@ function renderCounterContent(): string {
   <div class="transport-log">
     <div class="transport-heading"><strong>Transport log</strong><span>${mode}</span></div>
     <p>${counterStreamsEnabled ? "SSE stream available in this runtime" : "Serverless mode: protocol replay without durable stream"}</p>
+  </div>
+  <div class="offline-queue">
+    <div class="transport-heading"><strong>Offline queue</strong><span>online</span></div>
+    <p>No pending actions.</p>
   </div>
 </section>`;
 }

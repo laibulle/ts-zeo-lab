@@ -30,6 +30,7 @@ const mutations = createTodoMutationClient({
 });
 const counterClient = createCounterClient({
   endpoint: routes.counterMutations,
+  reconcileEndpoint: routes.counterReconcile,
   store: counterStore,
 });
 const target = document.getElementById("app");

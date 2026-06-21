@@ -63,7 +63,11 @@ export function createReconcileSnapshotResult<Snapshot>({
   accepted,
   rejected,
   snapshot,
-}: ReconcileSnapshotResult<Snapshot>): ReconcileSnapshotResult<Snapshot> {
+}: {
+  readonly snapshot: Snapshot;
+  readonly accepted: readonly string[];
+  readonly rejected: readonly RejectedMutation[];
+}): ReconcileSnapshotResult<Snapshot> {
   validateIdentifiers(accepted, "accepted mutation id");
   validateRejectedMutations(rejected);
 

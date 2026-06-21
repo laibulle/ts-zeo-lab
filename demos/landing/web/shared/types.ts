@@ -68,6 +68,7 @@ export interface Routes {
   readonly counter: string;
   readonly counterEvents: string;
   readonly counterMutations: string;
+  readonly counterReconcile: string;
   readonly createTodo: string;
   readonly home: string;
   readonly mutations: string;

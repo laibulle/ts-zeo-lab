@@ -4,6 +4,7 @@ export const routes: Routes = {
   counter: "/counter",
   counterEvents: "/counter/events",
   counterMutations: "/counter/actions",
+  counterReconcile: "/counter/reconcile",
   createTodo: "/todos/",
   home: "/",
   mutations: "/todos/actions",
