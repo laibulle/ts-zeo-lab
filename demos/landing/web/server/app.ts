@@ -24,6 +24,11 @@ import { createTodoUseCases } from "../../application/todo-use-cases.js";
 import type { Todo } from "../../domain/todo.js";
 import { openTodoRepository } from "../../infrastructure/todo-repository.js";
 import type {
+  Block,
+  BlocksMutationActionType,
+  BlocksMutationPayload,
+  BlocksRuntimeResult,
+  BlocksState,
   CounterMutationActionResult,
   CounterMutationActionType,
   CounterRuntimeResult,
@@ -40,6 +45,8 @@ const publicDirectory = new URL("../public/", import.meta.url);
 const clientEntry = process.env.TODO_CLIENT_ENTRY ?? "/client.mjs";
 const counterStreamsEnabled = process.env.COUNTER_STREAMS !== "0" && process.env.VERCEL !== "1";
 const counterClients = new Set<ReadableStreamDefaultController<Uint8Array>>();
+const blocksStreamsEnabled = counterStreamsEnabled;
+const blocksClients = new Set<ReadableStreamDefaultController<Uint8Array>>();
 const textEncoder = new TextEncoder();
 const todoRepository = await openTodoRepository();
 const todoUseCases = createTodoUseCases({
@@ -67,6 +74,16 @@ const counterStore = createStore<CounterState>({
     }),
   },
 });
+const blocksStore = createStore<BlocksState>({
+  freeze: true,
+  state: createInitialBlocksState(),
+  transitions: {
+    editBlock: (state, payload: unknown) => editBlock(state, payload),
+    insertBlock: (state, payload: unknown) => insertBlock(state, payload),
+    moveBlock: (state, payload: unknown) => moveBlock(state, payload),
+    deleteBlock: (state, payload: unknown) => deleteBlock(state, payload),
+  },
+});
 
 export const app = createApp();
 
@@ -75,6 +92,7 @@ export const router = defineRoutes<Handler>((r) => {
 
   r.scope("/", { pipe: "browser" }, (r) => {
     r.get("home", "/", renderHome);
+    r.get("blocks", "/blocks", renderBlocks);
     r.get("counter", "/counter", renderCounter);
     r.get("todos", "/todos", renderTodos);
     r.get("stats", "/stats", renderStats);
@@ -84,6 +102,11 @@ export const router = defineRoutes<Handler>((r) => {
       r.get("counter.events", "/events", handleCounterEvents);
       r.post("counter.actions", "/actions", handleCounterAction);
       r.post("counter.reconcile", "/reconcile", handleCounterReconcile);
+    });
+    r.scope("/blocks", (r) => {
+      r.get("blocks.events", "/events", handleBlocksEvents);
+      r.post("blocks.actions", "/actions", handleBlocksAction);
+      r.post("blocks.reconcile", "/reconcile", handleBlocksReconcile);
     });
     r.scope("/todos", (r) => {
       r.post("todos.actions", "/actions", handleTodoAction);
@@ -104,6 +127,10 @@ function mountRoutes(app: App, router: Router<Handler>): void {
 
 function renderHome(): Response {
   return html(renderPage("landing"));
+}
+
+function renderBlocks(): Response {
+  return html(renderPage("blocks"));
 }
 
 function renderTodos(): Response {
@@ -193,6 +220,38 @@ async function handleCounterAction({ request }: Context): Promise<Response> {
 
 async function handleCounterReconcile({ request }: Context): Promise<Response> {
   return json(reconcileCounterMutations(await request.json()));
+}
+
+async function handleBlocksAction({ request }: Context): Promise<Response> {
+  return json(dispatchBlocksMutation(await request.json()));
+}
+
+async function handleBlocksReconcile({ request }: Context): Promise<Response> {
+  return json(reconcileBlocksMutations(await request.json()));
+}
+
+function handleBlocksEvents(): Response {
+  if (!blocksStreamsEnabled) {
+    return text("Blocks streams are disabled in this runtime", { status: 409 });
+  }
+
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      blocksClients.add(controller);
+      controller.enqueue(encodeBlocksEvent(createSnapshotResult(blocksStore.snapshot())));
+    },
+    cancel() {
+      // The controller is removed on the next failed enqueue if the stream is cancelled.
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "cache-control": "no-store",
+      "content-type": "text/event-stream; charset=utf-8",
+      "x-accel-buffering": "no",
+    },
+  });
 }
 
 function handleCounterEvents(): Response {
@@ -286,6 +345,119 @@ function reconcileCounterMutations(payload: unknown): ReconcileResult {
   return createReconcileAcceptedResult(counterStore.version(), accepted);
 }
 
+function dispatchBlocksMutation(payload: unknown): BlocksRuntimeResult {
+  const request = getMutationRequest(payload);
+  const previousVersion = blocksStore.version();
+  const action = normalizeBlocksAction(request.action.type, request.action.payload);
+
+  if (action === null) {
+    return blocksSnapshotResult();
+  }
+
+  blocksStore.dispatch(action.transition, action.payload);
+
+  const result = request.version === previousVersion
+    ? createActionResult(previousVersion, blocksStore.version(), action.transition, action.payload) as BlocksRuntimeResult
+    : blocksSnapshotResult();
+
+  if (blocksStreamsEnabled && result.kind === "action") {
+    broadcastBlocksResult(result);
+  }
+
+  return result;
+}
+
+function reconcileBlocksMutations(payload: unknown): ReconcileResult {
+  const request = getReconcileRequest(payload);
+  const startVersion = blocksStore.version();
+  const accepted: string[] = [];
+  const rejected: RejectedMutation[] = [];
+
+  for (const pending of request.actions) {
+    const action = normalizeBlocksAction(pending.action.type, pending.action.payload);
+
+    if (action === null) {
+      rejected.push({ id: pending.id, reason: "unknown block action" });
+      continue;
+    }
+
+    const conflict = blockConflictReason(action.transition, action.payload, pending.baseVersion);
+
+    if (conflict !== null) {
+      rejected.push({ id: pending.id, reason: conflict });
+      continue;
+    }
+
+    const previousVersion = blocksStore.version();
+    blocksStore.dispatch(action.transition, action.payload);
+    accepted.push(pending.id);
+    broadcastBlocksResult(createActionResult(previousVersion, blocksStore.version(), action.transition, action.payload) as BlocksRuntimeResult);
+  }
+
+  if (rejected.length !== 0 || startVersion !== request.lastSeenVersion) {
+    return createReconcileSnapshotResult({
+      snapshot: blocksStore.snapshot(),
+      accepted,
+      rejected,
+    });
+  }
+
+  return createReconcileAcceptedResult(blocksStore.version(), accepted);
+}
+
+function blockConflictReason(
+  transition: BlocksMutationActionType,
+  payload: BlocksMutationPayload,
+  baseVersion: number,
+): string | null {
+  if (transition === "insertBlock") {
+    return blocksStore.getState().blocks[payload.id] === undefined ? null : "block id already exists";
+  }
+
+  const block = blocksStore.getState().blocks[payload.id];
+
+  if (block === undefined) {
+    return "target block no longer exists";
+  }
+
+  if (transition === "editBlock" && block.version > baseVersion) {
+    return "target block changed while client was offline";
+  }
+
+  if (transition === "deleteBlock" && block.version > baseVersion) {
+    return "target block changed before delete";
+  }
+
+  return null;
+}
+
+function normalizeBlocksAction(type: string, payload: unknown): {
+  readonly transition: BlocksMutationActionType;
+  readonly payload: BlocksMutationPayload;
+} | null {
+  if (type === "edit" && isEditBlockPayload(payload)) {
+    return { transition: "editBlock", payload };
+  }
+
+  if (type === "insertAfter" && isInsertBlockPayload(payload)) {
+    return { transition: "insertBlock", payload };
+  }
+
+  if (type === "moveAfter" && isMoveBlockPayload(payload)) {
+    return { transition: "moveBlock", payload };
+  }
+
+  if (type === "delete" && isDeleteBlockPayload(payload)) {
+    return { transition: "deleteBlock", payload };
+  }
+
+  return null;
+}
+
+function blocksSnapshotResult(): BlocksRuntimeResult {
+  return createSnapshotResult(blocksStore.snapshot());
+}
+
 function counterResult(
   previousVersion: number,
   type: CounterMutationActionType,
@@ -319,8 +491,169 @@ function broadcastCounterResult(result: CounterRuntimeResult): void {
   }
 }
 
+function broadcastBlocksResult(result: BlocksRuntimeResult): void {
+  const message = encodeBlocksEvent(result);
+
+  for (const client of Array.from(blocksClients)) {
+    try {
+      client.enqueue(message);
+    } catch {
+      blocksClients.delete(client);
+    }
+  }
+}
+
 function encodeCounterEvent(result: CounterRuntimeResult): Uint8Array {
   return textEncoder.encode(`event: counter\ndata: ${JSON.stringify(result)}\n\n`);
+}
+
+function encodeBlocksEvent(result: BlocksRuntimeResult): Uint8Array {
+  return textEncoder.encode(`event: blocks\ndata: ${JSON.stringify(result)}\n\n`);
+}
+
+function createInitialBlocksState(): BlocksState {
+  const blocks: readonly Block[] = [
+    {
+      id: "intro",
+      text: "This page is rendered on the server, then hydrated by the client.",
+      version: 1,
+      updatedBy: "system",
+    },
+    {
+      id: "idea",
+      text: "Go offline, edit this block, trigger a remote edit, then reconnect.",
+      version: 1,
+      updatedBy: "system",
+    },
+    {
+      id: "merge",
+      text: "Insertions are replayable; stale edits to the same block need a snapshot.",
+      version: 1,
+      updatedBy: "system",
+    },
+  ];
+
+  return {
+    order: blocks.map((block) => block.id),
+    blocks: Object.fromEntries(blocks.map((block) => [block.id, block])),
+  };
+}
+
+function editBlock(state: BlocksState, payload: unknown): BlocksState {
+  if (!isEditBlockPayload(payload) || state.blocks[payload.id] === undefined) {
+    return state;
+  }
+
+  return {
+    ...state,
+    blocks: {
+      ...state.blocks,
+      [payload.id]: {
+        ...state.blocks[payload.id],
+        text: payload.text,
+        version: state.blocks[payload.id].version + 1,
+        updatedBy: payload.actor,
+      },
+    },
+  };
+}
+
+function insertBlock(state: BlocksState, payload: unknown): BlocksState {
+  if (!isInsertBlockPayload(payload) || state.blocks[payload.id] !== undefined) {
+    return state;
+  }
+
+  const index = blockInsertionIndex(state.order, payload.afterId);
+  const block: Block = {
+    id: payload.id,
+    text: payload.text,
+    version: 1,
+    updatedBy: payload.actor,
+  };
+
+  return {
+    order: [
+      ...state.order.slice(0, index),
+      block.id,
+      ...state.order.slice(index),
+    ],
+    blocks: {
+      ...state.blocks,
+      [block.id]: block,
+    },
+  };
+}
+
+function moveBlock(state: BlocksState, payload: unknown): BlocksState {
+  if (!isMoveBlockPayload(payload) || state.blocks[payload.id] === undefined) {
+    return state;
+  }
+
+  const withoutBlock = state.order.filter((id) => id !== payload.id);
+  const index = blockInsertionIndex(withoutBlock, payload.afterId);
+
+  return {
+    ...state,
+    order: [
+      ...withoutBlock.slice(0, index),
+      payload.id,
+      ...withoutBlock.slice(index),
+    ],
+  };
+}
+
+function deleteBlock(state: BlocksState, payload: unknown): BlocksState {
+  if (!isDeleteBlockPayload(payload) || state.blocks[payload.id] === undefined) {
+    return state;
+  }
+
+  const { [payload.id]: _removed, ...blocks } = state.blocks;
+
+  return {
+    order: state.order.filter((id) => id !== payload.id),
+    blocks,
+  };
+}
+
+function blockInsertionIndex(order: readonly string[], afterId: string | null): number {
+  if (afterId === null) {
+    return 0;
+  }
+
+  const index = order.indexOf(afterId);
+  return index === -1 ? order.length : index + 1;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function isEditBlockPayload(payload: unknown): payload is Extract<BlocksMutationPayload, { readonly text: string }> {
+  return isRecord(payload)
+    && typeof payload.id === "string"
+    && typeof payload.text === "string"
+    && typeof payload.actor === "string";
+}
+
+function isInsertBlockPayload(payload: unknown): payload is Extract<BlocksMutationPayload, { readonly afterId: string | null; readonly text: string }> {
+  return isRecord(payload)
+    && typeof payload.id === "string"
+    && (payload.afterId === null || typeof payload.afterId === "string")
+    && typeof payload.text === "string"
+    && typeof payload.actor === "string";
+}
+
+function isMoveBlockPayload(payload: unknown): payload is Extract<BlocksMutationPayload, { readonly afterId: string | null }> {
+  return isRecord(payload)
+    && typeof payload.id === "string"
+    && (payload.afterId === null || typeof payload.afterId === "string")
+    && typeof payload.actor === "string";
+}
+
+function isDeleteBlockPayload(payload: unknown): payload is Extract<BlocksMutationPayload, { readonly id: string }> {
+  return isRecord(payload)
+    && typeof payload.id === "string"
+    && typeof payload.actor === "string";
 }
 
 function isJsonRequest(request: Request): boolean {
@@ -405,6 +738,10 @@ function renderPage(page: Page): string {
   const counterBootstrap = JSON.stringify({
     snapshot: counterStore.snapshot(),
     streams: counterStreamsEnabled,
+  }).replaceAll("<", "\\u003c");
+  const blocksBootstrap = JSON.stringify({
+    snapshot: blocksStore.snapshot(),
+    streams: blocksStreamsEnabled,
   }).replaceAll("<", "\\u003c");
 
   return `<!doctype html>
@@ -794,6 +1131,66 @@ function renderPage(page: Page): string {
         gap: 12px;
       }
 
+      .blocks-demo {
+        display: grid;
+        gap: 14px;
+      }
+
+      .blocks-toolbar {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+      }
+
+      .blocks-toolbar p:not(.eyebrow) {
+        max-width: 680px;
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .blocks-shell {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+        gap: 12px;
+      }
+
+      .blocks-editor {
+        grid-row: span 2;
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+      }
+
+      .block-row {
+        display: grid;
+        gap: 10px;
+        padding: 14px 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .block-row textarea {
+        width: 100%;
+        min-height: 76px;
+        resize: vertical;
+      }
+
+      .block-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        color: var(--dim);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 12px;
+      }
+
       .counter-panel,
       .counter-flow,
       .offline-queue,
@@ -920,6 +1317,7 @@ function renderPage(page: Page): string {
         .demo-grid,
         .docs,
         .runtime-strip,
+        .blocks-shell,
         .counter-demo,
         .composer,
         li,
@@ -945,6 +1343,11 @@ function renderPage(page: Page): string {
           grid-column: auto;
         }
 
+        .blocks-toolbar {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
         .offline-queue {
           grid-column: auto;
         }
@@ -956,9 +1359,17 @@ function renderPage(page: Page): string {
       <header>
         <div>
           <p class="eyebrow">ts-zero demo lab</p>
-          <h1>${page === "landing" ? "ts-zero landing" : "Todo demo"}</h1>
+          <h1>${page === "landing" ? "ts-zero landing" : page === "counter" ? "Distributed counter" : page === "blocks" ? "Collaborative blocks" : "Todo demo"}</h1>
         </div>
-        <div class="count">${page === "landing" ? "SSR, client navigation, stores, mutations, native runtime" : `${remaining} open / ${todos.length} total`}</div>
+        <div class="count">${
+          page === "landing"
+            ? "SSR, client navigation, stores, mutations, native runtime"
+            : page === "counter"
+              ? "Versioned state, compact actions, live stream when the runtime allows it"
+              : page === "blocks"
+                ? "Offline edits, mergeable inserts, conflict snapshots and explicit reconciliation"
+                : `${remaining} open / ${todos.length} total`
+        }</div>
       </header>
 
       ${renderNavigation(page)}
@@ -966,6 +1377,7 @@ function renderPage(page: Page): string {
     </main>
     <script id="initial-state" type="application/json">${snapshot}</script>
     <script id="initial-counter-state" type="application/json">${counterBootstrap}</script>
+    <script id="initial-blocks-state" type="application/json">${blocksBootstrap}</script>
     <script type="module" src="${escapeHtml(clientEntry)}"></script>
   </body>
 </html>`;
@@ -989,6 +1401,7 @@ function renderNavigation(page: Page): string {
   return `<nav aria-label="Demo navigation">
   <a class="${page === "landing" ? "active" : ""}" href="${router.path("home")}">Overview</a>
   <a class="${page === "counter" ? "active" : ""}" href="${router.path("counter")}">Counter</a>
+  <a class="${page === "blocks" ? "active" : ""}" href="${router.path("blocks")}">Blocks</a>
   <a class="${page === "todos" ? "active" : ""}" href="${router.path("todos")}">Todos</a>
   <a class="${page === "stats" ? "active" : ""}" href="${router.path("stats")}">Stats</a>
 </nav>`;
@@ -1001,6 +1414,10 @@ function renderContent(page: Page, todos: readonly Todo[]): string {
 
   if (page === "counter") {
     return renderCounterContent();
+  }
+
+  if (page === "blocks") {
+    return renderBlocksContent();
   }
 
   if (page === "stats") {
@@ -1025,6 +1442,11 @@ function renderLandingContent(): string {
     <span class="demo-kicker">distributed</span>
     <strong>Counter runtime</strong>
     <span>Versioned state, compact mutations and live SSE when hosted on a long-running runtime.</span>
+  </a>
+  <a class="demo-tile" href="${router.path("blocks")}">
+    <span class="demo-kicker">collaborative</span>
+    <strong>Block editor</strong>
+    <span>Notion-style offline edits, mergeable inserts and conflict repair through snapshots.</span>
   </a>
   <a class="demo-tile" href="${router.path("todos")}">
     <span class="demo-kicker">interactive</span>
@@ -1109,6 +1531,53 @@ function renderCounterContent(): string {
     <p>No pending actions.</p>
   </div>
 </section>`;
+}
+
+function renderBlocksContent(): string {
+  const state = blocksStore.getState();
+  const blocks = state.order.map((id) => state.blocks[id]).filter((block): block is Block => block !== undefined);
+
+  return `<section class="blocks-demo" aria-label="Collaborative blocks">
+  <div class="blocks-toolbar">
+    <div>
+      <p class="eyebrow">collaborative document</p>
+      <h3>Offline block editing with server reconciliation</h3>
+      <p>Edit blocks locally, simulate a concurrent collaborator, then reconnect. Inserts can merge; stale edits to the same block are rejected and repaired by a snapshot.</p>
+    </div>
+    <div class="counter-actions">
+      <button class="secondary" type="button">Go offline</button>
+      <button type="button">Reconnect</button>
+      <button class="secondary" type="button">Remote edit</button>
+    </div>
+  </div>
+  <div class="blocks-shell">
+    <div class="blocks-editor">
+      <div class="transport-heading"><strong>Document</strong><span>online · v${blocksStore.version()}</span></div>
+      ${blocks.map(renderBlock).join("")}
+      <button type="button">Insert at top</button>
+    </div>
+    <div class="offline-queue">
+      <div class="transport-heading"><strong>Offline queue</strong><span>0 pending</span></div>
+      <p>No pending block actions.</p>
+    </div>
+    <div class="transport-log">
+      <div class="transport-heading"><strong>Reconciliation log</strong><span>block-aware</span></div>
+      <p>Document loaded from SSR snapshot</p>
+    </div>
+  </div>
+</section>`;
+}
+
+function renderBlock(block: Block): string {
+  return `<article class="block-row">
+  <textarea aria-label="Edit ${escapeHtml(block.id)}">${escapeHtml(block.text)}</textarea>
+  <div class="block-meta">
+    <span>${escapeHtml(block.id)}</span>
+    <span>block v${block.version}</span>
+    <span>${escapeHtml(block.updatedBy)}</span>
+  </div>
+  <button class="secondary" type="button">Insert after</button>
+</article>`;
 }
 
 function normalizeCounterDelta(delta: unknown): number {

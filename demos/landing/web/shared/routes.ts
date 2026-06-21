@@ -1,6 +1,10 @@
 import type { Routes } from "./types.js";
 
 export const routes: Routes = {
+  blocks: "/blocks",
+  blocksEvents: "/blocks/events",
+  blocksMutations: "/blocks/actions",
+  blocksReconcile: "/blocks/reconcile",
   counter: "/counter",
   counterEvents: "/counter/events",
   counterMutations: "/counter/actions",

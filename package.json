@@ -4,16 +4,19 @@
   "type": "module",
   "workspaces": [
     "demos/*",
+    "kits/*",
     "packages/*"
   ],
   "scripts": {
-    "build": "tsc -b packages/*",
+    "build": "npm run build:primitives",
+    "build:primitives": "tsc -b packages/*",
     "bench": "npm run build && node packages/uuid/bench/generate.mjs",
     "bench:uuid": "npm run build && node packages/uuid/bench/generate.mjs",
     "bench:uuid:compare": "npm run build && node packages/uuid/bench/compare-reference.mjs",
     "bench:uuid:v7": "npm run build && node packages/uuid/bench/v7.mjs",
     "check": "npm test && npm run pack:check",
-    "clean": "tsc -b packages/* --clean",
+    "clean": "npm run clean:primitives",
+    "clean:primitives": "tsc -b packages/* --clean",
     "demo:landing:bun": "npm run build && npm --workspace @ts-zero/demo-landing run build && npm --workspace @ts-zero/demo-landing run start:bun",
     "demo:landing:macos": "npm run build && npm --workspace @ts-zero/demo-landing run native:build:xcode",
     "demo:landing": "npm run build && npm --workspace @ts-zero/demo-landing run dev",

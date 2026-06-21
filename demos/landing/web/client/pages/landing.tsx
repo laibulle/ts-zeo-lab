@@ -30,6 +30,11 @@ export function LandingPage({
           <strong>Counter runtime</strong>
           <span>Versioned state, compact mutations and live SSE when hosted on a long-running runtime.</span>
         </a>
+        <a class="demo-tile" href={routes.blocks} onClick={navigateTo(uiStore, "blocks", routes.blocks)}>
+          <span class="demo-kicker">collaborative</span>
+          <strong>Block editor</strong>
+          <span>Notion-style offline edits, mergeable inserts and conflict repair through snapshots.</span>
+        </a>
         <a class="demo-tile" href={routes.todos} onClick={navigateTo(uiStore, "todos", routes.todos)}>
           <span class="demo-kicker">interactive</span>
           <strong>Todo app</strong>

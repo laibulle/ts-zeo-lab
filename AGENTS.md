@@ -1,25 +1,32 @@
 # ts-zero Agent Guide
 
-This monorepo publishes TypeScript libraries under the `@ts-zero` namespace.
+This monorepo publishes TypeScript libraries under two namespaces:
+
+- `@ts-zero/*` for primitives in `packages/*`.
+- `@ts-zero-kit/*` for composite kits in `kits/*`.
 
 ## Non-Negotiables
 
-- Runtime packages must have zero dependencies.
+- Primitive packages in `packages/*` must have zero runtime dependencies, including internal runtime dependencies unless an explicit design decision changes their classification.
+- Kit packages in `kits/*` may depend on `@ts-zero/*` primitives, but must have zero third-party runtime dependencies.
 - Runtime packages must be extremely optimized for tree-shaking.
 - Runtime packages must pass strict tree-checking review: unused exports must remain removable by modern bundlers.
 - Prefer small, auditable TypeScript over clever abstractions.
 - Treat standards conformance, security, and performance as release gates.
 - Do not add dependencies, code generation, native addons, or WASM without an explicit design decision.
+- Do not make primitives depend on kits.
+- Do not place `@ts-zero-kit/*` packages in `packages/*`; kits live in `kits/*`.
 - If a benchmark compares against an external package, install it outside the repository or use an already supplied path.
 
 ## Package Requirements
 
-Every package must include:
+Every primitive and kit package must include:
 
 - `README.md` with API, conformance notes, security notes, and benchmark instructions when performance matters.
 - `AGENTS.md` with package-specific implementation rules.
 - Tests for standards fixtures, invalid input, buffer offsets, and security-sensitive failure modes.
-- A package manifest with an empty runtime `dependencies` object.
+- A primitive package manifest with an empty runtime `dependencies` object.
+- A kit package manifest with no third-party runtime dependencies; internal `@ts-zero/*` dependencies must be documented.
 - A package manifest with `sideEffects: false` unless a package has a documented reason not to.
 
 ## Quality Bar
@@ -31,6 +38,7 @@ Every package must include:
 - Tree-checking: when adding an API, ask whether importing one symbol can accidentally retain unrelated algorithms, lookup tables, state, or runtime branches.
 - Subpath exports: add focused subpaths when they let consumers avoid unrelated algorithms or state, for example format-only helpers separate from generators.
 - Top-tier bundle design: split internal modules when it materially improves dead-code elimination, but do not fragment code in ways that harm auditability.
+- Kits should import primitive subpaths when possible, for example `@ts-zero/uuid/v7`, instead of broad barrels.
 - Avoid namespace-oriented public examples for bundle-sensitive usage; prefer named imports in docs and tests.
 - Portability: target modern runtimes with Web Platform APIs where possible, especially `globalThis.crypto`.
 
@@ -40,6 +48,12 @@ Before handing off changes:
 
 ```sh
 npm run check
+```
+
+For primitive-only structural changes:
+
+```sh
+npm run build:primitives
 ```
 
 For performance-sensitive UUID changes:

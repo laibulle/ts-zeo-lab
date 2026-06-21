@@ -1,16 +1,21 @@
 import { Match, Switch } from "solid-js";
 import { TodoHeader } from "./components/header.js";
 import { TodoNavigation } from "./components/navigation.js";
+import { BlocksPage } from "./pages/blocks.js";
 import { LandingPage } from "./pages/landing.js";
 import { CounterPage } from "./pages/counter.js";
 import { StatsPage } from "./pages/stats.js";
 import { TodoPage } from "./pages/todos.js";
+import type { BlocksClient } from "./blocks-mutations.js";
 import type { CounterClient } from "./counter-mutations.js";
 import type { TodoMutationClient } from "./mutations.js";
 import { useStoreState } from "./solid-store.js";
-import type { CounterStore, Routes, TodoStore, UiStore } from "../shared/types.js";
+import type { BlocksStore, CounterStore, Routes, TodoStore, UiStore } from "../shared/types.js";
 
 export function TodoApp({
+  blocksClient,
+  blocksStreams,
+  blocksStore,
   counterClient,
   counterStore,
   counterStreams,
@@ -19,6 +24,9 @@ export function TodoApp({
   mutations,
   routes,
 }: {
+  readonly blocksClient: BlocksClient;
+  readonly blocksStreams: boolean;
+  readonly blocksStore: BlocksStore;
   readonly counterClient: CounterClient;
   readonly counterStore: CounterStore;
   readonly counterStreams: boolean;
@@ -39,6 +47,9 @@ export function TodoApp({
         </Match>
         <Match when={uiState().page === "counter"}>
           <CounterPage client={counterClient} routes={routes} store={counterStore} streams={counterStreams} />
+        </Match>
+        <Match when={uiState().page === "blocks"}>
+          <BlocksPage client={blocksClient} routes={routes} store={blocksStore} streams={blocksStreams} />
         </Match>
         <Match when={uiState().page === "stats"}>
           <StatsPage store={store} />

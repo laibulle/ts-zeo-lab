@@ -53,6 +53,7 @@ export default defineConfig({
     },
     proxy: {
       "^/$": backend,
+      "^/blocks(?:/.*)?$": backend,
       "^/stats$": backend,
       "^/todos(?:/.*)?$": backend,
     },
