@@ -8,7 +8,7 @@ Versioned mutation protocol helpers for ts-zero.
 - Keep the package web-standard and transport-agnostic.
 - Do not add RPC semantics or generated clients.
 - Keep `index.ts` re-export-only.
-- Preserve focused subpaths: `./apply`, `./protocol`, `./errors`, and `./types`.
+- Preserve focused subpaths: `./apply`, `./protocol`, `./reconcile`, `./errors`, and `./types`.
 - Do not import `@ts-zero/store` at runtime; accept store-shaped objects.
 
 ## Design Rules
@@ -16,6 +16,8 @@ Versioned mutation protocol helpers for ts-zero.
 - Prefer terms like mutation, action, version, snapshot, result.
 - Keep payloads plain and inspectable over JSON.
 - Treat snapshot fallback as resynchronization, not the normal path.
+- Offline reconciliation must stay explicit: pending actions, accepted ids, rejected ids, snapshot fallback.
+- Do not add CRDT behavior or hidden merge policy to this package.
 - Do not assume Solid, React, DOM, Node, Bun, serverless providers, or native hosts.
 - Keep helpers small enough to be replaced by hand-written `fetch` code.
 
@@ -37,5 +39,6 @@ Keep tests for:
 - action result application;
 - snapshot hydration;
 - stale local version failure;
+- offline reconcile request/result validation;
 - public subpath resolution;
 - tree-checking source assertions.

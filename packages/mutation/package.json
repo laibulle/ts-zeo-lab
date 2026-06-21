@@ -24,6 +24,10 @@
       "types": "./dist/protocol.d.ts",
       "default": "./dist/protocol.js"
     },
+    "./reconcile": {
+      "types": "./dist/reconcile.d.ts",
+      "default": "./dist/reconcile.js"
+    },
     "./types": {
       "types": "./dist/types.d.ts",
       "default": "./dist/types.js"

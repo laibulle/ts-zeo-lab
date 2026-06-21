@@ -74,6 +74,70 @@ import {
 
 The helpers work with any store-shaped object. They do not import `@ts-zero/store` at runtime.
 
+## Offline Reconciliation
+
+`@ts-zero/mutation/reconcile` provides a small contract for offline action queues:
+
+- clients persist pending actions with an id, base version, action and timestamp;
+- clients replay those actions when connectivity returns;
+- servers can acknowledge accepted actions or return a snapshot with explicit rejections;
+- conflict policy stays in the application/domain.
+
+Pending action:
+
+```json
+{
+  "id": "action-1",
+  "baseVersion": 12,
+  "action": {
+    "type": "increment",
+    "payload": 1
+  },
+  "createdAt": 1710000000000
+}
+```
+
+Replay request:
+
+```json
+{
+  "clientId": "client-1",
+  "lastSeenVersion": 12,
+  "actions": []
+}
+```
+
+Accepted result:
+
+```json
+{
+  "kind": "accepted",
+  "version": 15,
+  "accepted": ["action-1"]
+}
+```
+
+Snapshot fallback with rejections:
+
+```json
+{
+  "kind": "snapshot",
+  "snapshot": {
+    "version": 18,
+    "state": {}
+  },
+  "accepted": ["action-1"],
+  "rejected": [
+    {
+      "id": "action-2",
+      "reason": "conflict"
+    }
+  ]
+}
+```
+
+This is not a CRDT and does not promise automatic merging. Commutative actions, such as counter increments, can replay naturally. Domain-sensitive actions must define their own conflict rules.
+
 ## Web Standards
 
 This package intentionally stays close to the platform:
@@ -92,6 +156,7 @@ This package intentionally stays close to the platform:
 - `sideEffects: false`.
 - `index.ts` is only a re-export file.
 - Focused subpaths: `/apply`, `/protocol`, `/errors`, `/types`.
+- Reconciliation helpers live in `/reconcile` and are not pulled in unless imported.
 - `types.ts` is runtime-empty.
 
 Prefer focused imports in bundle-sensitive code:
@@ -99,6 +164,7 @@ Prefer focused imports in bundle-sensitive code:
 ```ts
 import { applyMutationResult } from "@ts-zero/mutation/apply";
 import { createMutationRequest } from "@ts-zero/mutation/protocol";
+import { createReconcileRequest } from "@ts-zero/mutation/reconcile";
 ```
 
 ## Non-Goals
@@ -109,5 +175,7 @@ import { createMutationRequest } from "@ts-zero/mutation/protocol";
 - No RPC.
 - No subscriptions.
 - No optimistic update policy.
+- No automatic offline merge policy.
+- No CRDT.
 - No schema validation system.
 - No dependency on `@ts-zero/store`.

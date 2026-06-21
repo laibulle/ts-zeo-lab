@@ -8,6 +8,15 @@ export {
   getMutationResult,
   isVersionCurrent,
 } from "./protocol.js";
+export {
+  createPendingMutation,
+  createReconcileAcceptedResult,
+  createReconcileRequest,
+  createReconcileSnapshotResult,
+  getReconcileRequest,
+  getReconcileResult,
+  shouldReplayMutation,
+} from "./reconcile.js";
 export type {
   MutationAction,
   MutationActionResult,
@@ -16,4 +25,10 @@ export type {
   MutationSnapshotResult,
   MutationStore,
   MutationVersion,
+  PendingMutation,
+  ReconcileAcceptedResult,
+  ReconcileRequest,
+  ReconcileResult,
+  ReconcileSnapshotResult,
+  RejectedMutation,
 } from "./types.js";
