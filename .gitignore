@@ -14,3 +14,7 @@ out/
 # Local demo data
 demos/**/*.sqlite
 demos/**/*.sqlite-*
+
+# Generated Xcode projects
+demos/**/*.xcodeproj/
+demos/**/DerivedData/

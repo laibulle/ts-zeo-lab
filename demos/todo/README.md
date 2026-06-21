@@ -24,6 +24,20 @@ Avec Bun:
 npm run demo:todo:bun
 ```
 
+App native macOS:
+
+```sh
+npm run demo:todo:macos
+```
+
+Pour ouvrir le projet Xcode genere:
+
+```sh
+npm --workspace @ts-zero/demo-todo run native:open:xcode
+```
+
+Le projet Xcode est genere depuis `native/project.yml` avec XcodeGen. Le `.xcodeproj` reste un artefact local.
+
 ## Ce que la demo exerce
 
 - `@ts-zero/http` pour le routing Web Standard `Request` / `Response`;
@@ -39,6 +53,8 @@ npm run demo:todo:bun
 - compilation du client demo avec le JSX runtime `@ts-zero/html/jsx-runtime`;
 - Vite pour servir le client TypeScript/TSX de demo;
 - SQLite pour persister les todos;
+- app macOS SwiftUI native qui charge un runtime TypeScript dans JavaScriptCore;
+- `@ts-zero/native-runtime` pour le channel host natif, les messages et les capabilities;
 - adaptateurs runtime separes du coeur HTTP.
 
 ## Architecture
@@ -52,6 +68,9 @@ npm run demo:todo:bun
 - `web/shared/`: contrats partages front/serveur, comme routes et snapshots;
 - `web/server/app.ts`: composition root HTTP, routing et SSR;
 - `web/vite.config.ts`: serveur de developpement client et proxy vers le backend.
+- `native/runtime/`: runtime TypeScript execute dans JavaScriptCore;
+- `native/macos/`: host SwiftUI macOS et implementation des capabilities natives;
+- `native/project.yml`: manifest XcodeGen pour generer le projet Xcode.
 
 Les todos sont persistees dans `todo.sqlite` par defaut. Le chemin peut etre remplace avec:
 

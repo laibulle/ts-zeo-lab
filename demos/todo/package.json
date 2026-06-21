@@ -6,6 +6,10 @@
     "build": "tsc -b",
     "clean": "tsc -b --clean",
     "dev": "npm run build && node dist/web/dev.js",
+    "native:build:js": "esbuild native/runtime/todo-native.ts --bundle --format=iife --global-name=TsZeroTodoNativeBundle --outfile=native/dist/runtime.js --target=es2022",
+    "native:build:xcode": "npm run native:build:js && npm run native:generate:xcode && xcodebuild -quiet -project native/TsZeroTodo.xcodeproj -scheme TodoNative -configuration Debug -derivedDataPath native/dist/DerivedData build",
+    "native:generate:xcode": "cd native && xcodegen generate",
+    "native:open:xcode": "npm run native:build:js && npm run native:generate:xcode && open native/TsZeroTodo.xcodeproj",
     "start:bun": "bun dist/web/server/bun.js",
     "start": "node dist/web/server/node.js"
   },
@@ -13,6 +17,7 @@
     "@ts-zero/bun-server": "0.0.0",
     "@ts-zero/html": "0.0.0",
     "@ts-zero/http": "0.0.0",
+    "@ts-zero/native-runtime": "0.0.0",
     "@ts-zero/node-server": "0.0.0",
     "@ts-zero/router": "0.0.0",
     "@ts-zero/store": "0.0.0",
@@ -20,6 +25,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.0.0",
+    "esbuild": "^0.28.1",
     "vite": "^8.0.16"
   }
 }

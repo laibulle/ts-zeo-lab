@@ -1,0 +1,38 @@
+name: TsZeroTodo
+options:
+  bundleIdPrefix: dev.tszero
+  deploymentTarget:
+    macOS: "14.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+targets:
+  TodoNative:
+    type: application
+    platform: macOS
+    sources:
+      - path: macos/App
+      - path: dist/runtime.js
+        buildPhase: resources
+    dependencies:
+      - sdk: JavaScriptCore.framework
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: "YES"
+        INFOPLIST_KEY_CFBundleDisplayName: "ts-zero Todo"
+        INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.developer-tools"
+        PRODUCT_BUNDLE_IDENTIFIER: "dev.tszero.todo.native"
+    preBuildScripts:
+      - name: Build JavaScriptCore runtime
+        basedOnDependencyAnalysis: false
+        script: |
+          cd "$PROJECT_DIR/.."
+          npm run native:build:js
+schemes:
+  TodoNative:
+    build:
+      targets:
+        TodoNative: all
+    run:
+      config: Debug
