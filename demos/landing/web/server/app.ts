@@ -16,9 +16,7 @@ import { createTodoProjection } from "../../application/todo-projection.js";
 import { createTodoUseCases } from "../../application/todo-use-cases.js";
 import type { Todo } from "../../domain/todo.js";
 import { openSqliteTodoRepository } from "../../infrastructure/sqlite-todo-repository.js";
-import type { TodoMutationActionResult, TodoMutationActionType, TodoMutationPayload, TodoRuntimeResult } from "../shared/types.js";
-
-type Page = "todos" | "stats";
+import type { Page, TodoMutationActionResult, TodoMutationActionType, TodoMutationPayload, TodoRuntimeResult } from "../shared/types.js";
 
 const clientFile = new URL("../public/client.mjs", import.meta.url);
 const publicDirectory = new URL("../public/", import.meta.url);
@@ -43,6 +41,7 @@ export const router = defineRoutes<Handler>((r) => {
 
   r.scope("/", { pipe: "browser" }, (r) => {
     r.get("home", "/", renderHome);
+    r.get("todos", "/todos", renderTodos);
     r.get("stats", "/stats", renderStats);
     r.get("client", "/client.mjs", renderClientModule);
     r.get("client.asset", "/assets/:file", serveClientAsset);
@@ -64,6 +63,10 @@ function mountRoutes(app: App, router: Router<Handler>): void {
 }
 
 function renderHome(): Response {
+  return html(renderPage("landing"));
+}
+
+function renderTodos(): Response {
   return html(renderPage("todos"));
 }
 
@@ -96,7 +99,7 @@ async function createTodo({ request }: Context): Promise<Response> {
     store.dispatch("createTodo", todo);
   }
 
-  return redirect(router.path("home"));
+  return redirect(router.path("todos"));
 }
 
 function toggleTodo({ params }: Context): Response {
@@ -104,7 +107,7 @@ function toggleTodo({ params }: Context): Response {
     store.dispatch("toggleTodo", params.id);
   }
 
-  return redirect(router.path("home"));
+  return redirect(router.path("todos"));
 }
 
 function deleteTodo({ params }: Context): Response {
@@ -112,7 +115,7 @@ function deleteTodo({ params }: Context): Response {
     store.dispatch("deleteTodo", params.id);
   }
 
-  return redirect(router.path("home"));
+  return redirect(router.path("todos"));
 }
 
 async function handleTodoAction({ request }: Context): Promise<Response> {
@@ -200,7 +203,7 @@ function renderPage(page: Page): string {
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ts-zero todo</title>
+    <title>ts-zero demos</title>
     <style>
       :root {
         color-scheme: light;
@@ -219,7 +222,7 @@ function renderPage(page: Page): string {
       }
 
       main {
-        width: min(720px, calc(100% - 32px));
+        width: min(920px, calc(100% - 32px));
         margin: 0 auto;
         padding: 56px 0;
       }
@@ -239,10 +242,97 @@ function renderPage(page: Page): string {
         letter-spacing: 0;
       }
 
+      h2 {
+        margin: 0;
+        max-width: 720px;
+        font-size: 46px;
+        line-height: 1.02;
+        letter-spacing: 0;
+      }
+
+      p {
+        margin: 0;
+      }
+
+      .eyebrow {
+        margin: 0 0 8px;
+        color: #25636f;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
       .count {
         color: #65707d;
         font-size: 14px;
         white-space: nowrap;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: end;
+        gap: 28px;
+        margin: 20px 0 26px;
+        padding: 34px 0 8px;
+        border-top: 1px solid #d8dde5;
+      }
+
+      .hero p:not(.eyebrow) {
+        max-width: 660px;
+        margin-top: 18px;
+        color: #4b5563;
+        font-size: 17px;
+        line-height: 1.55;
+      }
+
+      .primary-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 0 15px;
+        border: 1px solid #1e293b;
+        border-radius: 6px;
+        background: #1e293b;
+        color: #ffffff;
+        font-size: 14px;
+        font-weight: 700;
+        text-decoration: none;
+        white-space: nowrap;
+      }
+
+      .demo-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .demo-tile {
+        min-height: 156px;
+        padding: 16px;
+        border: 1px solid #e1e5eb;
+        border-radius: 8px;
+        background: #ffffff;
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .demo-tile strong,
+      .demo-tile span {
+        display: block;
+      }
+
+      .demo-tile strong {
+        margin-bottom: 12px;
+        font-size: 17px;
+      }
+
+      .demo-tile span {
+        color: #5f6b7a;
+        font-size: 14px;
+        line-height: 1.45;
       }
 
       nav {
@@ -382,6 +472,8 @@ function renderPage(page: Page): string {
         }
 
         header,
+        .hero,
+        .demo-grid,
         .composer,
         li,
         .stats {
@@ -402,12 +494,15 @@ function renderPage(page: Page): string {
   <body>
     <main id="app">
       <header>
-        <h1>ts-zero todo</h1>
-        <div class="count">${remaining} open / ${todos.length} total</div>
+        <div>
+          <p class="eyebrow">ts-zero demo lab</p>
+          <h1>${page === "landing" ? "A tiny full-stack platform, in pieces" : "Todo demo"}</h1>
+        </div>
+        <div class="count">${page === "landing" ? "SSR, client navigation, stores, mutations, native runtime" : `${remaining} open / ${todos.length} total`}</div>
       </header>
 
       ${renderNavigation(page)}
-      ${page === "stats" ? renderStatsContent(todos) : renderTodosContent(todos)}
+      ${renderContent(page, todos)}
     </main>
     <script id="initial-state" type="application/json">${snapshot}</script>
     <script type="module" src="${escapeHtml(clientEntry)}"></script>
@@ -430,10 +525,49 @@ function renderTodo(todo: Todo): string {
 }
 
 function renderNavigation(page: Page): string {
-  return `<nav aria-label="Todo navigation">
-  <a class="${page === "todos" ? "active" : ""}" href="${router.path("home")}">Todos</a>
+  return `<nav aria-label="Demo navigation">
+  <a class="${page === "landing" ? "active" : ""}" href="${router.path("home")}">Overview</a>
+  <a class="${page === "todos" ? "active" : ""}" href="${router.path("todos")}">Todos</a>
   <a class="${page === "stats" ? "active" : ""}" href="${router.path("stats")}">Stats</a>
 </nav>`;
+}
+
+function renderContent(page: Page, todos: readonly Todo[]): string {
+  if (page === "landing") {
+    return renderLandingContent();
+  }
+
+  if (page === "stats") {
+    return renderStatsContent(todos);
+  }
+
+  return renderTodosContent(todos);
+}
+
+function renderLandingContent(): string {
+  return `<section class="hero" aria-labelledby="landing-title">
+  <div>
+    <p class="eyebrow">zero dependency primitives</p>
+    <h2 id="landing-title">Build the framework surface from small, inspectable packages.</h2>
+    <p>This demo is the playground for SSR, client takeover, immutable state, compact mutations, native runtime experiments and clean application boundaries.</p>
+  </div>
+  <a class="primary-link" href="${router.path("todos")}">Open todo demo</a>
+</section>
+
+<section class="demo-grid" aria-label="Available demos">
+  <a class="demo-tile" href="${router.path("todos")}">
+    <strong>Todo app</strong>
+    <span>SSR first load, Solid client takeover, SQLite persistence and compact mutation acks.</span>
+  </a>
+  <a class="demo-tile" href="${router.path("stats")}">
+    <strong>Live stats</strong>
+    <span>Shared immutable store selectors rendered server-side and updated client-side.</span>
+  </a>
+  <div class="demo-tile">
+    <strong>Native runtime</strong>
+    <span>JavaScriptCore host events and native capabilities for the macOS prototype.</span>
+  </div>
+</section>`;
 }
 
 function renderTodosContent(todos: readonly Todo[]): string {

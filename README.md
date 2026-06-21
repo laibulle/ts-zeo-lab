@@ -34,8 +34,8 @@ npm run build
 npm test
 npm run check
 npm run bench:uuid:compare
-npm run demo:todo
-npm run demo:todo:bun
+npm run demo:landing
+npm run demo:landing:bun
 ```
 
 Les benchmarks de comparaison installent les references dans un dossier temporaire hors du depot; elles ne sont pas ajoutees aux dependances.
@@ -52,7 +52,7 @@ Ce gate construit les packages, lance les tests, verifie les subpaths publics, l
 
 ## Demos
 
-- `demos/todo`: todo app rendue cote serveur avec `@ts-zero/http`, `@ts-zero/node-server`, `@ts-zero/bun-server`, `@ts-zero/router`, `@ts-zero/store` et `@ts-zero/uuid/v7`.
+- `demos/landing`: landing SSR avec demos integrees, dont une todo app avec `@ts-zero/http`, `@ts-zero/node-server`, `@ts-zero/bun-server`, `@ts-zero/router`, `@ts-zero/store` et `@ts-zero/uuid/v7`.
 
 ## Tree-Shaking Top Tier
 

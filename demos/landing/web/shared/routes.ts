@@ -5,6 +5,7 @@ export const routes: Routes = {
   home: "/",
   mutations: "/todos/actions",
   stats: "/stats",
+  todos: "/todos",
   toggleTodo: (id) => `/todos/${encodeURIComponent(id)}/toggle`,
   deleteTodo: (id) => `/todos/${encodeURIComponent(id)}/delete`,
 };

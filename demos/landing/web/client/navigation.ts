@@ -6,7 +6,7 @@ export function createUiStore(page: Page): UiStore {
     state: { page },
     transitions: {
       navigate: (state, nextPage: unknown) => {
-        if (nextPage !== "todos" && nextPage !== "stats") {
+        if (nextPage !== "landing" && nextPage !== "todos" && nextPage !== "stats") {
           return state;
         }
 
@@ -17,7 +17,15 @@ export function createUiStore(page: Page): UiStore {
 }
 
 export function getPageFromLocation(knownRoutes: Routes): Page {
-  return location.pathname === knownRoutes.stats ? "stats" : "todos";
+  if (location.pathname === knownRoutes.stats) {
+    return "stats";
+  }
+
+  if (location.pathname === knownRoutes.todos) {
+    return "todos";
+  }
+
+  return "landing";
 }
 
 export function navigateTo(uiStore: UiStore, page: Page, path: string): (event: MouseEvent) => void {

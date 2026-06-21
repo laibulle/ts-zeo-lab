@@ -11,7 +11,7 @@ export interface TodoState {
   readonly todos: readonly Todo[];
 }
 
-export type Page = "todos" | "stats";
+export type Page = "landing" | "todos" | "stats";
 
 export interface UiState {
   readonly page: Page;
@@ -42,6 +42,7 @@ export interface Routes {
   readonly home: string;
   readonly mutations: string;
   readonly stats: string;
+  readonly todos: string;
   readonly toggleTodo: (id: string) => string;
   readonly deleteTodo: (id: string) => string;
 }

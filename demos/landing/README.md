@@ -1,13 +1,13 @@
-# Todo Demo
+# Demo Lab
 
-Demo minimale pour `@ts-zero/http` avec une todo app rendue cote serveur, puis amelioree cote navigateur avec Solid.
+Landing de demonstration pour `ts-zero`, avec des demos integrees dont une todo app rendue cote serveur, puis amelioree cote navigateur avec Solid.
 
 La demo est organisee comme une petite application d'architecture propre: le domaine Todo reste independant, les cas d'usage pilotent les ports, SQLite vit dans l'infrastructure, et HTTP ne fait que composer ces pieces.
 
 ## Lancer
 
 ```sh
-npm run demo:todo
+npm run demo:landing
 ```
 
 Puis ouvrir:
@@ -16,24 +16,24 @@ Puis ouvrir:
 http://localhost:3000
 ```
 
-Le serveur HTTP applicatif ecoute sur `3000` par defaut. En developpement, le client Solid est bundle par Vite en mode watch dans `dist/web/public`, puis servi par le serveur applicatif comme en production.
+Le serveur HTTP applicatif ecoute sur `3000` par defaut. La racine `/` sert une landing SSR qui liste les demos. La todo vit sur `/todos`, avec ses statistiques sur `/stats`. En developpement, le client Solid est bundle par Vite en mode watch dans `dist/web/public`, puis servi par le serveur applicatif comme en production.
 
 Avec Bun:
 
 ```sh
-npm run demo:todo:bun
+npm run demo:landing:bun
 ```
 
 App native macOS:
 
 ```sh
-npm run demo:todo:macos
+npm run demo:landing:macos
 ```
 
 Pour ouvrir le projet Xcode genere:
 
 ```sh
-npm --workspace @ts-zero/demo-todo run native:open:xcode
+npm --workspace @ts-zero/demo-landing run native:open:xcode
 ```
 
 Le projet Xcode est genere depuis `native/project.yml` avec XcodeGen. Le `.xcodeproj` reste un artefact local.
@@ -48,7 +48,8 @@ Le projet Xcode est genere depuis `native/project.yml` avec XcodeGen. Le `.xcode
 - `@ts-zero/mutation` pour les mutations versionnees, les acknowledgements compacts et le fallback snapshot;
 - `@ts-zero/uuid/v7` pour les ids de todos;
 - formulaires HTML classiques;
-- plusieurs pages: liste des todos et statistiques;
+- landing SSR avec demos integrees;
+- plusieurs pages: landing, liste des todos et statistiques;
 - routes POST sans JavaScript client, gardees comme fallback;
 - mutations JSON inspectables sur `POST /todos/actions`: `version + action`, sans RPC cache;
 - client TSX dans `web/client/client.tsx`, structure en pages et composants;
@@ -66,7 +67,7 @@ Le projet Xcode est genere depuis `native/project.yml` avec XcodeGen. Le `.xcode
 - `infrastructure/`: repository SQLite, compatible Node `node:sqlite` et Bun `bun:sqlite`;
 - `web/`: couche interface facon Phoenix, avec front, serveur web et contrats partages;
 - `web/server/`: HTTP, SSR et adaptateurs Node/Bun;
-- `web/client/`: entree navigateur, pages et composants interactifs;
+- `web/client/`: entree navigateur, landing, pages et composants interactifs;
 - `web/client/mutations.ts`: client HTTP mince pour `@ts-zero/mutation`;
 - `web/shared/`: contrats partages front/serveur, comme routes et snapshots;
 - `web/server/app.ts`: composition root HTTP, routing et SSR;
@@ -78,5 +79,5 @@ Le projet Xcode est genere depuis `native/project.yml` avec XcodeGen. Le `.xcode
 Les todos sont persistees dans `todo.sqlite` par defaut. Le chemin peut etre remplace avec:
 
 ```sh
-TODO_DB=/tmp/todo.sqlite npm run demo:todo
+TODO_DB=/tmp/todo.sqlite npm run demo:landing
 ```

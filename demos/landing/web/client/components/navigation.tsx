@@ -11,8 +11,11 @@ export function TodoNavigation({
   readonly routes: Routes;
 }) {
   return (
-    <nav aria-label="Todo navigation">
-      <a class={page === "todos" ? "active" : ""} href={routes.home} onClick={navigateTo(uiStore, "todos", routes.home)}>
+    <nav aria-label="Demo navigation">
+      <a class={page === "landing" ? "active" : ""} href={routes.home} onClick={navigateTo(uiStore, "landing", routes.home)}>
+        Overview
+      </a>
+      <a class={page === "todos" ? "active" : ""} href={routes.todos} onClick={navigateTo(uiStore, "todos", routes.todos)}>
         Todos
       </a>
       <a class={page === "stats" ? "active" : ""} href={routes.stats} onClick={navigateTo(uiStore, "stats", routes.stats)}>
