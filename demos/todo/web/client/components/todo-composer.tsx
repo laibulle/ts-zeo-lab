@@ -1,4 +1,3 @@
-import type { HtmlChild } from "@ts-zero/html/types";
 import type { TodoWebRuntime } from "../runtime.js";
 import { createTodoPayload } from "../todo-store.js";
 
@@ -8,7 +7,7 @@ export function TodoComposer({
 }: {
   readonly runtime: TodoWebRuntime;
   readonly action: string;
-}): HtmlChild {
+}) {
   return (
     <form
       class="composer"

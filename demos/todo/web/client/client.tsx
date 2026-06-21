@@ -1,4 +1,4 @@
-import { mount } from "@ts-zero/html/mount";
+import { render } from "solid-js/web";
 import { TodoApp } from "./app.js";
 import { createUiStore, getPageFromLocation } from "./navigation.js";
 import { createTodoWebRuntime } from "./runtime.js";
@@ -29,4 +29,5 @@ addEventListener("popstate", () => {
   uiStore.dispatch("navigate", getPageFromLocation(routes));
 });
 
-mount(target, <TodoApp store={store} uiStore={uiStore} runtime={runtime} routes={routes} />);
+target.textContent = "";
+render(() => <TodoApp store={store} uiStore={uiStore} runtime={runtime} routes={routes} />, target);

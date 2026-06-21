@@ -1,6 +1,6 @@
 # Todo Demo
 
-Demo minimale pour `@ts-zero/http` avec une todo app rendue cote serveur, puis amelioree cote navigateur avec `@ts-zero/html`.
+Demo minimale pour `@ts-zero/http` avec une todo app rendue cote serveur, puis amelioree cote navigateur avec Solid.
 
 La demo est organisee comme une petite application d'architecture propre: le domaine Todo reste independant, les cas d'usage pilotent les ports, SQLite vit dans l'infrastructure, et HTTP ne fait que composer ces pieces.
 
@@ -41,7 +41,7 @@ Le projet Xcode est genere depuis `native/project.yml` avec XcodeGen. Le `.xcode
 ## Ce que la demo exerce
 
 - `@ts-zero/http` pour le routing Web Standard `Request` / `Response`;
-- `@ts-zero/html` pour remonter l'UI HTML cote navigateur sans VDOM generaliste;
+- Solid pour remonter l'UI HTML cote navigateur avec un rendu fin et familier des devs React;
 - `@ts-zero/node-server` pour servir la demo avec Node;
 - `@ts-zero/bun-server` pour servir la meme app avec Bun;
 - `@ts-zero/store` pour l'etat immutable partage entre le serveur et le client;
@@ -50,7 +50,7 @@ Le projet Xcode est genere depuis `native/project.yml` avec XcodeGen. Le `.xcode
 - plusieurs pages: liste des todos et statistiques;
 - routes POST sans JavaScript client, gardees comme fallback;
 - client TSX dans `web/client/client.tsx`, structure en pages et composants;
-- compilation du client demo avec le JSX runtime `@ts-zero/html/jsx-runtime`;
+- compilation du client demo avec Solid et Vite;
 - Vite pour servir le client TypeScript/TSX de demo;
 - SQLite pour persister les todos;
 - app macOS SwiftUI native qui charge un runtime TypeScript dans JavaScriptCore;

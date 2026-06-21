@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import { fileURLToPath } from "node:url";
+import solid from "vite-plugin-solid";
 
 const backendPort = process.env.BACKEND_PORT ?? "3001";
 const frontendPort = Number.parseInt(process.env.FRONTEND_PORT ?? process.env.PORT ?? "3000", 10);
@@ -10,6 +11,9 @@ const outputDirectory = fileURLToPath(new URL("../dist/web/public", import.meta.
 
 export default defineConfig({
   root,
+  plugins: [
+    solid(),
+  ],
   publicDir: false,
   build: {
     emptyOutDir: true,
@@ -28,10 +32,6 @@ export default defineConfig({
   },
   resolve: {
     alias: [
-      {
-        find: /^@ts-zero\/html\/(.+)$/,
-        replacement: `${repositoryRoot}/packages/html/src/$1.ts`,
-      },
       {
         find: /^@ts-zero\/runtime\/(.+)$/,
         replacement: `${repositoryRoot}/packages/runtime/src/$1.ts`,

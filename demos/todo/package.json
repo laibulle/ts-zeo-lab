@@ -17,18 +17,19 @@
   },
   "dependencies": {
     "@ts-zero/bun-server": "0.0.0",
-    "@ts-zero/html": "0.0.0",
     "@ts-zero/http": "0.0.0",
     "@ts-zero/native-runtime": "0.0.0",
     "@ts-zero/node-server": "0.0.0",
     "@ts-zero/router": "0.0.0",
     "@ts-zero/runtime": "0.0.0",
     "@ts-zero/store": "0.0.0",
-    "@ts-zero/uuid": "0.0.0"
+    "@ts-zero/uuid": "0.0.0",
+    "solid-js": "^1.9.13"
   },
   "devDependencies": {
     "@types/node": "^26.0.0",
     "esbuild": "^0.28.1",
-    "vite": "^8.0.16"
+    "vite": "^8.0.16",
+    "vite-plugin-solid": "^2.11.12"
   }
 }

@@ -1,5 +1,3 @@
-import type { HtmlChild } from "@ts-zero/html/types";
-
 export interface TodoStatsMetrics {
   readonly total: number;
   readonly remaining: number;
@@ -7,7 +5,7 @@ export interface TodoStatsMetrics {
   readonly progress: number;
 }
 
-export function StatsMetrics({ stats }: { readonly stats: TodoStatsMetrics }): HtmlChild {
+export function StatsMetrics({ stats }: { readonly stats: TodoStatsMetrics }) {
   return (
     <>
       <section class="stats" aria-label="Todo stats">

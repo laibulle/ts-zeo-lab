@@ -1,6 +1,6 @@
-import { list } from "@ts-zero/html/bindings";
-import type { HtmlChild } from "@ts-zero/html/types";
+import { For } from "solid-js";
 import type { TodoWebRuntime } from "../runtime.js";
+import { useStoreState } from "../solid-store.js";
 import type { Routes, Todo, TodoStore } from "../../shared/types.js";
 
 export function TodoList({
@@ -11,15 +11,14 @@ export function TodoList({
   readonly runtime: TodoWebRuntime;
   readonly store: TodoStore;
   readonly routes: Routes;
-}): HtmlChild {
+}) {
+  const state = useStoreState(store);
+
   return (
     <ul>
-      {list(
-        store,
-        (state) => state.todos,
-        (todo) => todo.id,
-        (todo) => <TodoItem runtime={runtime} routes={routes} todo={todo} />,
-      )}
+      <For each={state().todos}>
+        {(todo) => <TodoItem runtime={runtime} routes={routes} todo={todo} />}
+      </For>
     </ul>
   );
 }
@@ -32,7 +31,7 @@ function TodoItem({
   readonly runtime: TodoWebRuntime;
   readonly routes: Routes;
   readonly todo: Todo;
-}): HtmlChild {
+}) {
   return (
     <li class={todo.completed ? "done" : ""}>
       <span class="title">{todo.title}</span>

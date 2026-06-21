@@ -1,4 +1,3 @@
-import type { HtmlChild } from "@ts-zero/html/types";
 import { navigateTo } from "../navigation.js";
 import type { Page, Routes, UiStore } from "../../shared/types.js";
 
@@ -10,7 +9,7 @@ export function TodoNavigation({
   readonly page: Page;
   readonly uiStore: UiStore;
   readonly routes: Routes;
-}): HtmlChild {
+}) {
   return (
     <nav aria-label="Todo navigation">
       <a class={page === "todos" ? "active" : ""} href={routes.home} onClick={navigateTo(uiStore, "todos", routes.home)}>

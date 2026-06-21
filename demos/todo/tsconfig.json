@@ -5,8 +5,8 @@
     "rootDir": ".",
     "outDir": "dist",
     "tsBuildInfoFile": "../../node_modules/.cache/ts-zero/demo-todo.tsbuildinfo",
-    "jsx": "react-jsx",
-    "jsxImportSource": "@ts-zero/html"
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js"
   },
   "include": [
     "application/**/*.ts",
