@@ -1,0 +1,47 @@
+{
+  "name": "@ts-zero/fsm",
+  "version": "0.0.0",
+  "description": "Zero-dependency finite state machine primitives for TypeScript.",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./assign": {
+      "types": "./dist/assign.d.ts",
+      "default": "./dist/assign.js"
+    },
+    "./errors": {
+      "types": "./dist/errors.d.ts",
+      "default": "./dist/errors.js"
+    },
+    "./machine": {
+      "types": "./dist/machine.d.ts",
+      "default": "./dist/machine.js"
+    },
+    "./service": {
+      "types": "./dist/service.d.ts",
+      "default": "./dist/service.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "default": "./dist/types.js"
+    },
+    "./xstate": {
+      "types": "./dist/xstate.d.ts",
+      "default": "./dist/xstate.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "tsc -b --clean",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {}
+}
