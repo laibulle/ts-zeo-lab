@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 
 import { createStore } from "@ts-zero/store/create";
 import { HtmlError, action, formAction, fragment, h, list, mount, select, text } from "../dist/index.js";
+import { Fragment, jsx, jsxs } from "../dist/jsx-runtime.js";
 
 installFakeDom();
 
@@ -67,6 +68,25 @@ describe("@ts-zero/html", () => {
     target.appendChild(node);
 
     assert.equal(target.textContent, "ABC");
+  });
+
+  it("creates nodes through the JSX runtime helpers", () => {
+    function Label({ value }) {
+      return jsx("span", { class: "title", children: value });
+    }
+
+    const node = jsxs("section", {
+      class: "card",
+      children: [
+        jsx("h2", { children: "Title" }),
+        jsx(Label, { value: "Body" }),
+        jsxs(Fragment, { children: [jsx("span", { children: "A" }), jsx("span", { children: "B" })] }),
+      ],
+    });
+
+    assert.equal(node.tagName, "SECTION");
+    assert.equal(node.className, "card");
+    assert.equal(node.textContent, "TitleBodyAB");
   });
 
   it("select updates a bounded HTML region from store subscriptions", () => {
@@ -160,6 +180,8 @@ describe("@ts-zero/html", () => {
     const bindings = await import("@ts-zero/html/bindings");
     const elements = await import("@ts-zero/html/elements");
     const mountModule = await import("@ts-zero/html/mount");
+    const jsxRuntime = await import("@ts-zero/html/jsx-runtime");
+    const jsxDevRuntime = await import("@ts-zero/html/jsx-dev-runtime");
     const errors = await import("@ts-zero/html/errors");
     const types = await import("@ts-zero/html/types");
 
@@ -168,6 +190,8 @@ describe("@ts-zero/html", () => {
     assert.equal(typeof bindings.select, "function");
     assert.equal(typeof elements.fragment, "function");
     assert.equal(typeof mountModule.mount, "function");
+    assert.equal(typeof jsxRuntime.jsx, "function");
+    assert.equal(typeof jsxDevRuntime.jsxDEV, "function");
     assert.equal(typeof errors.HtmlError, "function");
     assert.deepEqual(Object.keys(types), []);
   });

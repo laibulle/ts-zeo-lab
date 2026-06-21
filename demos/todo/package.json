@@ -3,6 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "tsc -b",
+    "clean": "tsc -b --clean",
     "start:bun": "bun bun.mjs",
     "start": "node server.mjs"
   },

@@ -30,7 +30,9 @@ npm run demo:todo:bun
 - `@ts-zero/uuid/v7` pour les ids de todos;
 - formulaires HTML classiques;
 - routes POST sans JavaScript client, gardees comme fallback;
-- client ESM sans bundler servi depuis les packages `dist` du workspace;
+- client TSX dans `client.tsx`, structure comme une petite couche de composants;
+- compilation du client demo avec le JSX runtime `@ts-zero/html/jsx-runtime`;
+- import map navigateur pour utiliser des imports `@ts-zero/...` sans bundler;
 - adaptateurs runtime separes du coeur HTTP.
 
 Les todos sont stockees en memoire et disparaissent quand le serveur s'arrete.

@@ -14,8 +14,8 @@
     "bench:uuid:v7": "npm run build && node packages/uuid/bench/v7.mjs",
     "check": "npm test && npm run pack:check",
     "clean": "tsc -b packages/* --clean",
-    "demo:todo:bun": "npm run build && npm --workspace @ts-zero/demo-todo run start:bun",
-    "demo:todo": "npm run build && npm --workspace @ts-zero/demo-todo start",
+    "demo:todo:bun": "npm run build && npm --workspace @ts-zero/demo-todo run build && npm --workspace @ts-zero/demo-todo run start:bun",
+    "demo:todo": "npm run build && npm --workspace @ts-zero/demo-todo run build && npm --workspace @ts-zero/demo-todo start",
     "pack:check": "npm --workspace @ts-zero/uuid pack --dry-run && npm --workspace @ts-zero/querystring pack --dry-run && npm --workspace @ts-zero/multipart pack --dry-run && npm --workspace @ts-zero/http pack --dry-run && npm --workspace @ts-zero/node-server pack --dry-run && npm --workspace @ts-zero/bun-server pack --dry-run && npm --workspace @ts-zero/router pack --dry-run && npm --workspace @ts-zero/store pack --dry-run && npm --workspace @ts-zero/html pack --dry-run",
     "test": "npm run build && node --test packages/*/test/*.test.mjs"
   },

@@ -28,6 +28,14 @@
       "types": "./dist/errors.d.ts",
       "default": "./dist/errors.js"
     },
+    "./jsx-dev-runtime": {
+      "types": "./dist/jsx-dev-runtime.d.ts",
+      "default": "./dist/jsx-dev-runtime.js"
+    },
+    "./jsx-runtime": {
+      "types": "./dist/jsx-runtime.d.ts",
+      "default": "./dist/jsx-runtime.js"
+    },
     "./mount": {
       "types": "./dist/mount.d.ts",
       "default": "./dist/mount.js"

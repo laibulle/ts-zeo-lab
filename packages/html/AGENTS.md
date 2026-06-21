@@ -6,7 +6,8 @@ This package is the browser HTML UI runtime for `@ts-zero`. It should make real 
 
 - Keep runtime dependencies at zero.
 - Keep `src/index.ts` as a re-export-only barrel.
-- Do not add JSX, compilers, template parsers, virtual DOM, schedulers, CSS engines, routers, fetch clients, storage, React compatibility, or mobile abstractions in this package.
+- Do not add compilers, template parsers, virtual DOM, schedulers, CSS engines, routers, fetch clients, storage, React compatibility, or mobile abstractions in this package.
+- Keep JSX support limited to the zero-dependency automatic runtime helpers in `jsx-runtime` and `jsx-dev-runtime`.
 - Do not import `@ts-zero/store` at runtime. Store compatibility must stay structural.
 - Do not expose APIs that accept raw HTML strings.
 
@@ -21,6 +22,8 @@ This package is the browser HTML UI runtime for `@ts-zero`. It should make real 
 - `list`
 - `action`
 - `formAction`
+- optional `jsx-runtime`
+- optional `jsx-dev-runtime`
 
 Everything else belongs in a separate optional package unless the design is explicitly changed.
 
@@ -39,6 +42,7 @@ Everything else belongs in a separate optional package unless the design is expl
 - Keep modules split by responsibility: elements, mount, bindings, actions, errors, types.
 - Do not make `elements` import bindings or actions.
 - Do not make `actions` import elements.
+- JSX runtime may import `elements`, but it must not import bindings, actions, store, router, or runtime-specific APIs.
 - Tests must verify package subpaths and barrel-only re-export behavior.
 
 ## Quality Gate
@@ -49,4 +53,4 @@ Run from the repository root:
 npm run check
 ```
 
-HTML tests must cover safe element creation, rejected unsafe inputs, mount/clear, store bindings, list key validation, DOM-to-store actions, form actions, subpath imports, and tree-checking.
+HTML tests must cover safe element creation, rejected unsafe inputs, mount/clear, store bindings, list key validation, DOM-to-store actions, form actions, JSX runtime helpers, subpath imports, and tree-checking.

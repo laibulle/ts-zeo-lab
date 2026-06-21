@@ -20,8 +20,9 @@ npm install @ts-zero/html
 - render store-backed arrays with `list`
 - dispatch DOM events to compatible stores with `action`
 - dispatch submit events with `formAction`
+- optional JSX automatic runtime through `@ts-zero/html/jsx-runtime`
 
-No compiler, no JSX requirement, no virtual DOM, no templates, no scheduler, no router, no network transport.
+No compiler owned by this package, no JSX requirement, no virtual DOM, no templates, no scheduler, no router, no network transport.
 
 ## Usage
 
@@ -59,6 +60,36 @@ mount(
 );
 ```
 
+## Optional JSX
+
+`@ts-zero/html` also exposes a zero-dependency JSX runtime. It is optional: applications can compile TSX with TypeScript, Bun, or their own tooling.
+
+```json
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "@ts-zero/html"
+  }
+}
+```
+
+```tsx
+/** @jsxImportSource @ts-zero/html */
+import { mount } from "@ts-zero/html/mount";
+
+function TodoItem({ todo }) {
+  return (
+    <li class={todo.completed ? "done" : ""}>
+      <span class="title">{todo.title}</span>
+    </li>
+  );
+}
+
+mount(document.body, <TodoItem todo={todo} />);
+```
+
+The JSX runtime produces the same real HTML nodes as `h`; it does not introduce React compatibility, a virtual DOM, or a scheduler.
+
 ## Store Compatibility
 
 `@ts-zero/html` does not import `@ts-zero/store` at runtime and does not require it as a package dependency. It accepts any store-shaped object with:
@@ -89,7 +120,7 @@ This package is optimized for top-tier tree-shaking:
 - ESM only.
 - `sideEffects: false`.
 - `index.ts` is only a re-export file.
-- focused subpaths: `@ts-zero/html/elements`, `/mount`, `/bindings`, `/actions`, `/errors`, `/types`.
+- focused subpaths: `@ts-zero/html/elements`, `/mount`, `/bindings`, `/actions`, `/jsx-runtime`, `/jsx-dev-runtime`, `/errors`, `/types`.
 - no top-level DOM reads.
 - no global auto-mounting or runtime patching.
 
@@ -107,6 +138,6 @@ import { select } from "@ts-zero/html/bindings";
 - No server rendering in v0.
 - No hydration protocol in v0.
 - No generalized virtual DOM.
-- No JSX runtime in v0.
+- No JSX requirement.
 - No CSS system.
 - No animation system.

@@ -10,6 +10,7 @@ const moduleFiles = new Map([
   ["@ts-zero/html/bindings.js", new URL("../../packages/html/dist/bindings.js", import.meta.url)],
   ["@ts-zero/html/elements.js", new URL("../../packages/html/dist/elements.js", import.meta.url)],
   ["@ts-zero/html/errors.js", new URL("../../packages/html/dist/errors.js", import.meta.url)],
+  ["@ts-zero/html/jsx-runtime.js", new URL("../../packages/html/dist/jsx-runtime.js", import.meta.url)],
   ["@ts-zero/html/mount.js", new URL("../../packages/html/dist/mount.js", import.meta.url)],
   ["@ts-zero/html/types.js", new URL("../../packages/html/dist/types.js", import.meta.url)],
   ["@ts-zero/store/create.js", new URL("../../packages/store/dist/create.js", import.meta.url)],
@@ -18,6 +19,8 @@ const moduleFiles = new Map([
   ["@ts-zero/store/snapshot.js", new URL("../../packages/store/dist/snapshot.js", import.meta.url)],
   ["@ts-zero/store/types.js", new URL("../../packages/store/dist/types.js", import.meta.url)],
 ]);
+
+const clientFile = new URL("./dist/client.js", import.meta.url);
 
 const store = createStore({
   freeze: true,
@@ -39,17 +42,23 @@ const store = createStore({
     id: v7,
   },
   transitions: {
-    createTodo: (state, title, context) => ({
-      ...state,
-      todos: [
-        {
-          id: context.id(),
-          title,
-          completed: false,
-        },
-        ...state.todos,
-      ],
-    }),
+    createTodo: (state, title, context) => {
+      if (typeof title !== "string" || title.length === 0) {
+        return state;
+      }
+
+      return {
+        ...state,
+        todos: [
+          {
+            id: context.id(),
+            title,
+            completed: false,
+          },
+          ...state.todos,
+        ],
+      };
+    },
     toggleTodo: (state, id) => ({
       ...state,
       todos: state.todos.map((todo) => (todo.id === id ? { ...todo, completed: !todo.completed } : todo)),
@@ -91,8 +100,8 @@ function renderHome() {
   return html(renderPage());
 }
 
-function renderClientModule() {
-  return javascript(renderClientScript());
+async function renderClientModule() {
+  return javascript(await readFile(clientFile, "utf8"));
 }
 
 async function serveHtmlModule({ params }) {
@@ -298,6 +307,7 @@ function renderPage() {
       </ul>
     </main>
     <script id="initial-state" type="application/json">${snapshot}</script>
+    <script type="importmap">${renderImportMap()}</script>
     <script type="module" src="/client.mjs"></script>
   </body>
 </html>`;
@@ -344,120 +354,15 @@ function javascript(body) {
   });
 }
 
-function renderClientScript() {
-  return `import { formAction } from "/modules/@ts-zero/html/actions.js";
-import { list, select } from "/modules/@ts-zero/html/bindings.js";
-import { h, text } from "/modules/@ts-zero/html/elements.js";
-import { mount } from "/modules/@ts-zero/html/mount.js";
-import { createStore } from "/modules/@ts-zero/store/create.js";
-
-const initial = JSON.parse(document.getElementById("initial-state").textContent);
-
-const store = createStore({
-  freeze: true,
-  state: initial.state,
-  version: initial.version,
-  context: {
-    id: () => crypto.randomUUID(),
-  },
-  transitions: {
-    createTodo: (state, title, context) => ({
-      ...state,
-      todos: [
-        {
-          id: context.id(),
-          title,
-          completed: false,
-        },
-        ...state.todos,
-      ],
-    }),
-    toggleTodo: (state, id) => ({
-      ...state,
-      todos: state.todos.map((todo) => (todo.id === id ? { ...todo, completed: !todo.completed } : todo)),
-    }),
-    deleteTodo: (state, id) => ({
-      ...state,
-      todos: state.todos.filter((todo) => todo.id !== id),
-    }),
-  },
-});
-
-mount(document.getElementById("app"), renderApp());
-
-function renderApp() {
-  return [
-    h("header", null,
-      h("h1", null, "ts-zero todo"),
-      select(store, (state) => {
-        const remaining = state.todos.filter((todo) => !todo.completed).length;
-        return \`\${remaining} open / \${state.todos.length} total\`;
-      }, (label) => h("div", { class: "count" }, label)),
-    ),
-    h("form", {
-      class: "composer",
-      method: "post",
-      action: "${router.path("todos.create")}",
-      onSubmit: withServerPost(formAction(store, "createTodo", (_form, data) => String(data.get("title") ?? "").trim()), (form) => {
-        form.reset();
-      }),
+function renderImportMap() {
+  return JSON.stringify({
+    imports: {
+      "@ts-zero/html/actions": "/modules/@ts-zero/html/actions.js",
+      "@ts-zero/html/bindings": "/modules/@ts-zero/html/bindings.js",
+      "@ts-zero/html/elements": "/modules/@ts-zero/html/elements.js",
+      "@ts-zero/html/jsx-runtime": "/modules/@ts-zero/html/jsx-runtime.js",
+      "@ts-zero/html/mount": "/modules/@ts-zero/html/mount.js",
+      "@ts-zero/store/create": "/modules/@ts-zero/store/create.js",
     },
-      h("input", { name: "title", autocomplete: "off", maxlength: 120, placeholder: "Add a task", required: true }),
-      h("button", { type: "submit" }, "Add"),
-    ),
-    h("ul", null,
-      list(
-        store,
-        (state) => state.todos,
-        (todo) => todo.id,
-        renderTodo,
-      ),
-    ),
-  ];
-}
-
-function renderTodo(todo) {
-  return h("li", { class: todo.completed ? "done" : "" },
-    h("span", { class: "title" }, todo.title),
-    h("form", {
-      method: "post",
-      action: \`/todos/\${encodeURIComponent(todo.id)}/toggle\`,
-      onSubmit: withServerPost((event) => {
-        event.preventDefault();
-        store.dispatch("toggleTodo", todo.id);
-      }),
-    },
-      h("button", { class: "secondary", type: "submit" }, todo.completed ? "Reopen" : "Done"),
-    ),
-    h("form", {
-      method: "post",
-      action: \`/todos/\${encodeURIComponent(todo.id)}/delete\`,
-      onSubmit: withServerPost((event) => {
-        event.preventDefault();
-        store.dispatch("deleteTodo", todo.id);
-      }),
-    },
-      h("button", { class: "danger", type: "submit" }, "Delete"),
-    ),
-  );
-}
-
-function withServerPost(handler, afterDispatch = () => undefined) {
-  return (event) => {
-    handler(event);
-
-    if (event.defaultPrevented !== true) {
-      return;
-    }
-
-    const form = event.currentTarget;
-    const body = new URLSearchParams(new FormData(form));
-    fetch(form.action, {
-      method: "POST",
-      body,
-    }).catch(() => undefined);
-    afterDispatch(form);
-  };
-}
-`;
+  });
 }
