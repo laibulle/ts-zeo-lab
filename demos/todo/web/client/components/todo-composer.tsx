@@ -1,8 +1,8 @@
 import { formAction } from "@ts-zero/html/actions";
 import type { HtmlChild } from "@ts-zero/html/types";
-import { withServerPost } from "../pages/server-post.js";
-import { createTodoPayload } from "../pages/todo-store.js";
-import type { TodoStore } from "../pages/types.js";
+import { withServerPost } from "../server-post.js";
+import { createTodoPayload } from "../todo-store.js";
+import type { TodoStore } from "../../shared/types.js";
 
 export function TodoComposer({ store, action }: { readonly store: TodoStore; readonly action: string }): HtmlChild {
   return (

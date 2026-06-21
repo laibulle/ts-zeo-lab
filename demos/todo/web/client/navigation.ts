@@ -1,13 +1,5 @@
 import { createStore } from "@ts-zero/store/create";
-import type { Page, Routes, UiState, UiStore } from "./types.js";
-
-export const routes: Routes = {
-  createTodo: "/todos/",
-  home: "/",
-  stats: "/stats",
-  toggleTodo: (id) => `/todos/${encodeURIComponent(id)}/toggle`,
-  deleteTodo: (id) => `/todos/${encodeURIComponent(id)}/delete`,
-};
+import type { Page, Routes, UiState, UiStore } from "../shared/types.js";
 
 export function createUiStore(page: Page): UiStore {
   return createStore<UiState>({

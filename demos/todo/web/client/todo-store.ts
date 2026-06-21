@@ -1,5 +1,5 @@
 import { createStore } from "@ts-zero/store/create";
-import type { CreateTodoPayload, Snapshot, TodoContext, TodoState, TodoStore } from "./types.js";
+import type { CreateTodoPayload, Snapshot, TodoContext, TodoState, TodoStore } from "../shared/types.js";
 
 export function createTodoStore(snapshot: Snapshot): TodoStore {
   return createStore<TodoState, TodoContext>({

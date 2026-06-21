@@ -1,8 +1,9 @@
 import { mount } from "@ts-zero/html/mount";
 import { TodoApp } from "./app.js";
-import { createUiStore, getPageFromLocation, routes } from "./routes.js";
+import { createUiStore, getPageFromLocation } from "./navigation.js";
 import { createTodoStore } from "./todo-store.js";
-import type { Snapshot } from "./types.js";
+import { routes } from "../shared/routes.js";
+import type { Snapshot } from "../shared/types.js";
 
 const initialState = document.getElementById("initial-state");
 

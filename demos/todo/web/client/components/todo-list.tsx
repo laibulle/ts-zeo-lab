@@ -1,7 +1,7 @@
 import { list } from "@ts-zero/html/bindings";
 import type { HtmlChild } from "@ts-zero/html/types";
-import { withServerPost } from "../pages/server-post.js";
-import type { Routes, Todo, TodoStore } from "../pages/types.js";
+import { withServerPost } from "../server-post.js";
+import type { Routes, Todo, TodoStore } from "../../shared/types.js";
 
 export function TodoList({ store, routes }: { readonly store: TodoStore; readonly routes: Routes }): HtmlChild {
   return (

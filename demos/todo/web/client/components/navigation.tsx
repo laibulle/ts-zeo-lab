@@ -1,6 +1,6 @@
 import type { HtmlChild } from "@ts-zero/html/types";
-import { navigateTo } from "../pages/routes.js";
-import type { Page, Routes, UiStore } from "../pages/types.js";
+import { navigateTo } from "../navigation.js";
+import type { Page, Routes, UiStore } from "../../shared/types.js";
 
 export function TodoNavigation({
   page,

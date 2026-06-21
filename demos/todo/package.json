@@ -5,9 +5,9 @@
   "scripts": {
     "build": "tsc -b",
     "clean": "tsc -b --clean",
-    "dev": "npm run build && node dist/dev.js",
-    "start:bun": "bun dist/bun.js",
-    "start": "node dist/server.js"
+    "dev": "npm run build && node dist/web/dev.js",
+    "start:bun": "bun dist/web/server/bun.js",
+    "start": "node dist/web/server/node.js"
   },
   "dependencies": {
     "@ts-zero/bun-server": "0.0.0",

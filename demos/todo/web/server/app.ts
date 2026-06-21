@@ -6,57 +6,29 @@ import type { App, Context, Handler, HttpMethod } from "@ts-zero/http";
 import type { Router } from "@ts-zero/router";
 import { validate } from "@ts-zero/uuid/format";
 import { v7 } from "@ts-zero/uuid/v7";
-import { createTodoProjection } from "./application/todo-projection.js";
-import { createTodoUseCases } from "./application/todo-use-cases.js";
-import { openSqliteTodoRepository } from "./infrastructure/sqlite-todo-repository.js";
-import type { Todo } from "./domain/todo.js";
+import { createTodoProjection } from "../../application/todo-projection.js";
+import { createTodoUseCases } from "../../application/todo-use-cases.js";
+import type { Todo } from "../../domain/todo.js";
+import { openSqliteTodoRepository } from "../../infrastructure/sqlite-todo-repository.js";
 
 type Page = "todos" | "stats";
 
 const moduleFiles = new Map<string, URL>([
-  ["@ts-zero/html/actions.js", new URL("../../../packages/html/dist/actions.js", import.meta.url)],
-  ["@ts-zero/html/bindings.js", new URL("../../../packages/html/dist/bindings.js", import.meta.url)],
-  ["@ts-zero/html/elements.js", new URL("../../../packages/html/dist/elements.js", import.meta.url)],
-  ["@ts-zero/html/errors.js", new URL("../../../packages/html/dist/errors.js", import.meta.url)],
-  ["@ts-zero/html/jsx-runtime.js", new URL("../../../packages/html/dist/jsx-runtime.js", import.meta.url)],
-  ["@ts-zero/html/mount.js", new URL("../../../packages/html/dist/mount.js", import.meta.url)],
-  ["@ts-zero/html/types.js", new URL("../../../packages/html/dist/types.js", import.meta.url)],
-  ["@ts-zero/store/create.js", new URL("../../../packages/store/dist/create.js", import.meta.url)],
-  ["@ts-zero/store/errors.js", new URL("../../../packages/store/dist/errors.js", import.meta.url)],
-  ["@ts-zero/store/freeze.js", new URL("../../../packages/store/dist/freeze.js", import.meta.url)],
-  ["@ts-zero/store/snapshot.js", new URL("../../../packages/store/dist/snapshot.js", import.meta.url)],
-  ["@ts-zero/store/types.js", new URL("../../../packages/store/dist/types.js", import.meta.url)],
+  ["@ts-zero/html/actions.js", new URL("../../../../../packages/html/dist/actions.js", import.meta.url)],
+  ["@ts-zero/html/bindings.js", new URL("../../../../../packages/html/dist/bindings.js", import.meta.url)],
+  ["@ts-zero/html/elements.js", new URL("../../../../../packages/html/dist/elements.js", import.meta.url)],
+  ["@ts-zero/html/errors.js", new URL("../../../../../packages/html/dist/errors.js", import.meta.url)],
+  ["@ts-zero/html/jsx-runtime.js", new URL("../../../../../packages/html/dist/jsx-runtime.js", import.meta.url)],
+  ["@ts-zero/html/mount.js", new URL("../../../../../packages/html/dist/mount.js", import.meta.url)],
+  ["@ts-zero/html/types.js", new URL("../../../../../packages/html/dist/types.js", import.meta.url)],
+  ["@ts-zero/store/create.js", new URL("../../../../../packages/store/dist/create.js", import.meta.url)],
+  ["@ts-zero/store/errors.js", new URL("../../../../../packages/store/dist/errors.js", import.meta.url)],
+  ["@ts-zero/store/freeze.js", new URL("../../../../../packages/store/dist/freeze.js", import.meta.url)],
+  ["@ts-zero/store/snapshot.js", new URL("../../../../../packages/store/dist/snapshot.js", import.meta.url)],
+  ["@ts-zero/store/types.js", new URL("../../../../../packages/store/dist/types.js", import.meta.url)],
 ]);
 
-const demoPageModuleFiles = new Map<string, URL>([
-  ["app.js", new URL("./pages/app.js", import.meta.url)],
-  ["app.js.map", new URL("./pages/app.js.map", import.meta.url)],
-  ["routes.js", new URL("./pages/routes.js", import.meta.url)],
-  ["routes.js.map", new URL("./pages/routes.js.map", import.meta.url)],
-  ["server-post.js", new URL("./pages/server-post.js", import.meta.url)],
-  ["server-post.js.map", new URL("./pages/server-post.js.map", import.meta.url)],
-  ["stats.js", new URL("./pages/stats.js", import.meta.url)],
-  ["stats.js.map", new URL("./pages/stats.js.map", import.meta.url)],
-  ["todo-store.js", new URL("./pages/todo-store.js", import.meta.url)],
-  ["todo-store.js.map", new URL("./pages/todo-store.js.map", import.meta.url)],
-  ["todos.js", new URL("./pages/todos.js", import.meta.url)],
-  ["todos.js.map", new URL("./pages/todos.js.map", import.meta.url)],
-]);
-
-const demoComponentModuleFiles = new Map<string, URL>([
-  ["header.js", new URL("./components/header.js", import.meta.url)],
-  ["header.js.map", new URL("./components/header.js.map", import.meta.url)],
-  ["navigation.js", new URL("./components/navigation.js", import.meta.url)],
-  ["navigation.js.map", new URL("./components/navigation.js.map", import.meta.url)],
-  ["stats-metrics.js", new URL("./components/stats-metrics.js", import.meta.url)],
-  ["stats-metrics.js.map", new URL("./components/stats-metrics.js.map", import.meta.url)],
-  ["todo-composer.js", new URL("./components/todo-composer.js", import.meta.url)],
-  ["todo-composer.js.map", new URL("./components/todo-composer.js.map", import.meta.url)],
-  ["todo-list.js", new URL("./components/todo-list.js", import.meta.url)],
-  ["todo-list.js.map", new URL("./components/todo-list.js.map", import.meta.url)],
-]);
-
-const clientFile = new URL("./pages/client.js", import.meta.url);
+const clientFile = new URL("../client/client.js", import.meta.url);
 const clientEntry = process.env.TODO_CLIENT_ENTRY ?? "/client.mjs";
 const todoRepository = await openSqliteTodoRepository();
 const todoUseCases = createTodoUseCases({
@@ -80,9 +52,6 @@ export const router = defineRoutes<Handler>((r) => {
     r.get("home", "/", renderHome);
     r.get("stats", "/stats", renderStats);
     r.get("client", "/client.mjs", renderClientModule);
-    r.get("demo.page.module", "/:file", serveDemoPageModule);
-    r.get("demo.page.submodule", "/pages/:file", serveDemoPageModule);
-    r.get("demo.component.module", "/components/:file", serveDemoComponentModule);
     r.get("html.module", "/modules/@ts-zero/html/:file", serveHtmlModule);
     r.get("store.module", "/modules/@ts-zero/store/:file", serveStoreModule);
     r.scope("/todos", (r) => {
@@ -111,14 +80,6 @@ function renderStats(): Response {
 
 async function renderClientModule(): Promise<Response> {
   return javascript(await readFile(clientFile, "utf8"));
-}
-
-async function serveDemoPageModule({ params }: Context): Promise<Response> {
-  return serveModuleFromMap(demoPageModuleFiles, params.file);
-}
-
-async function serveDemoComponentModule({ params }: Context): Promise<Response> {
-  return serveModuleFromMap(demoComponentModuleFiles, params.file);
 }
 
 async function serveHtmlModule({ params }: Context): Promise<Response> {
@@ -450,14 +411,6 @@ function escapeHtml(value: string): string {
 async function serveModule(specifier: string): Promise<Response> {
   const file = moduleFiles.get(specifier);
 
-  return serveModuleFile(file);
-}
-
-async function serveModuleFromMap(files: ReadonlyMap<string, URL>, fileName: string): Promise<Response> {
-  return serveModuleFile(files.get(fileName));
-}
-
-async function serveModuleFile(file: URL | undefined): Promise<Response> {
   if (file === undefined) {
     return text("Not Found", { status: 404 });
   }

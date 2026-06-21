@@ -1,10 +1,10 @@
 import { select } from "@ts-zero/html/bindings";
 import type { HtmlChild } from "@ts-zero/html/types";
-import { TodoHeader } from "../components/header.js";
-import { TodoNavigation } from "../components/navigation.js";
-import { StatsPage } from "./stats.js";
-import { TodoPage } from "./todos.js";
-import type { Routes, TodoStore, UiStore } from "./types.js";
+import { TodoHeader } from "./components/header.js";
+import { TodoNavigation } from "./components/navigation.js";
+import { StatsPage } from "./pages/stats.js";
+import { TodoPage } from "./pages/todos.js";
+import type { Routes, TodoStore, UiStore } from "../shared/types.js";
 
 export function TodoApp({
   store,
