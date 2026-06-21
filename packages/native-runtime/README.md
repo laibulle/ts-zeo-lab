@@ -2,6 +2,8 @@
 
 Runtime natif portable, zero dependance runtime, pour faire tourner du TypeScript dans un host mobile comme JavaScriptCore iOS, Android, Node, Bun ou un environnement de test.
 
+`@ts-zero/native-runtime` est la facade native-specialisee historique. Pour du code applicatif partage entre web, native, serveur et tests, preferer le coeur neutre `@ts-zero/runtime`.
+
 ## Objectif
 
 `@ts-zero/native-runtime` definit la frontiere entre le code applicatif JavaScript et le host natif. Le vocabulaire est volontairement `channel`, pas `bridge`: un channel transporte des messages de controle, tandis que les donnees lourdes restent cote natif via des handles opaques.
@@ -10,6 +12,8 @@ Runtime natif portable, zero dependance runtime, pour faire tourner du TypeScrip
 
 ```ts
 import { createNativeHandle, createNativeRuntime } from "@ts-zero/native-runtime";
+// Nouveau code cross-surface:
+// import { createRuntime } from "@ts-zero/runtime";
 
 const runtime = createNativeRuntime({
   channel: hostChannel,

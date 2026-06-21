@@ -54,7 +54,7 @@ Le projet Xcode est genere depuis `native/project.yml` avec XcodeGen. Le `.xcode
 - Vite pour servir le client TypeScript/TSX de demo;
 - SQLite pour persister les todos;
 - app macOS SwiftUI native qui charge un runtime TypeScript dans JavaScriptCore;
-- `@ts-zero/native-runtime` pour le channel host natif, les messages et les capabilities;
+- `@ts-zero/runtime` pour le channel host, les events, les messages et les capabilities partages;
 - adaptateurs runtime separes du coeur HTTP.
 
 ## Architecture
@@ -68,7 +68,7 @@ Le projet Xcode est genere depuis `native/project.yml` avec XcodeGen. Le `.xcode
 - `web/shared/`: contrats partages front/serveur, comme routes et snapshots;
 - `web/server/app.ts`: composition root HTTP, routing et SSR;
 - `web/vite.config.ts`: serveur de developpement client et proxy vers le backend.
-- `native/runtime/`: runtime TypeScript execute dans JavaScriptCore;
+- `native/runtime/`: runtime TypeScript partageable execute dans JavaScriptCore via `@ts-zero/runtime`;
 - `native/macos/`: host SwiftUI macOS et implementation des capabilities natives;
 - `native/project.yml`: manifest XcodeGen pour generer le projet Xcode.
 

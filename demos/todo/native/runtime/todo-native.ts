@@ -1,5 +1,5 @@
-import { createNativeRuntime } from "@ts-zero/native-runtime/runtime";
-import type { HostChannel, HostMessage, RuntimeMessage } from "@ts-zero/native-runtime/types";
+import { createRuntime } from "@ts-zero/runtime/runtime";
+import type { HostChannel, HostMessage, RuntimeMessage } from "@ts-zero/runtime/types";
 
 declare const nativeLog: (message: string) => void;
 declare const nativeSend: (message: string) => void;
@@ -30,7 +30,7 @@ const channel: HostChannel = {
   },
 };
 
-const runtime = createNativeRuntime({
+const runtime = createRuntime({
   channel,
   createId: createDemoId(),
 });

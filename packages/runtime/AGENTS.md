@@ -1,24 +1,21 @@
-# @ts-zero/native-runtime Agent Guide
+# @ts-zero/runtime Agent Guide
 
-Native host runtime primitives for ts-zero.
+Cross-surface application runtime primitives for ts-zero.
 
 ## Non-Negotiables
 
 - Do not add runtime dependencies.
-- Do not call this layer a bridge in public API names.
-- Prefer `@ts-zero/runtime` for new cross-surface runtime behavior.
 - Keep `index.ts` as a re-export-only module.
 - Preserve focused subpaths: `./channel`, `./runtime`, `./handles`, `./serializable`, `./errors`, and `./types`.
 - Keep runtime payloads serializable and fail-closed.
+- Do not add UI, DOM, Swift, Kotlin, Node, Bun, or JavaScriptCore assumptions to this package.
 
 ## Design Rules
 
-- Use `HostChannel` terminology for JS/native transport.
-- Keep JavaScript responsible for orchestration, not heavy binary transfer.
-- Use opaque `NativeHandle` values for native resources such as frames, files, audio buffers, images, database cursors, or shared native objects.
-- Do not add UI concepts to this package.
-- Do not assume DOM, Node APIs, React Native, Expo, Swift, Kotlin, timers, crypto, or storage exist.
-- Keep capabilities open-ended as `capability + operation`; package-specific typed capability layers can be added separately.
+- Use `HostChannel` terminology for runtime/surface transport.
+- Keep application logic portable across web, native, server, and tests.
+- Use opaque `ResourceHandle` values for resources such as frames, files, audio buffers, images, database cursors, or shared native objects.
+- Keep capabilities open-ended as `capability + operation`; typed capability layers belong in separate packages.
 - Prefer explicit errors over silent drops for unknown responses or malformed messages.
 
 ## Tree-Shaking Rules
@@ -36,7 +33,7 @@ Keep tests for:
 - host and runtime events;
 - failed responses and runtime destruction;
 - serializable validation and cycle rejection;
-- native handle validation;
+- resource handle validation;
 - malformed input failures;
 - public package subpath resolution;
 - tree-checking source assertions.
