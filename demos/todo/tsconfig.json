@@ -9,6 +9,8 @@
     "jsxImportSource": "@ts-zero/html"
   },
   "include": [
-    "client.tsx"
+    "components/**/*.tsx",
+    "pages/**/*.ts",
+    "pages/**/*.tsx"
   ]
 }

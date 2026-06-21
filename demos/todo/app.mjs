@@ -20,7 +20,7 @@ const moduleFiles = new Map([
   ["@ts-zero/store/types.js", new URL("../../packages/store/dist/types.js", import.meta.url)],
 ]);
 
-const clientFile = new URL("./dist/client.js", import.meta.url);
+const clientFile = new URL("./dist/pages/client.js", import.meta.url);
 
 const store = createStore({
   freeze: true,
