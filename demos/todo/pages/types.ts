@@ -34,6 +34,11 @@ export interface TodoContext {
   readonly [key: string]: unknown;
 }
 
+export interface CreateTodoPayload {
+  readonly id: string;
+  readonly title: string;
+}
+
 export type TodoStore = Store<TodoState>;
 
 export type UiStore = Store<UiState>;

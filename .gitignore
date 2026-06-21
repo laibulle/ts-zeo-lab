@@ -10,3 +10,7 @@ packages/*/dist/
 *.iml
 *.iws
 out/
+
+# Local demo data
+demos/**/*.sqlite
+demos/**/*.sqlite-*

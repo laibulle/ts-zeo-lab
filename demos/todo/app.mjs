@@ -2,8 +2,11 @@ import { readFile } from "node:fs/promises";
 
 import { createApp, html, redirect, text } from "@ts-zero/http";
 import { defineRoutes } from "@ts-zero/router";
-import { createStore } from "@ts-zero/store/create";
+import { validate } from "@ts-zero/uuid/format";
 import { v7 } from "@ts-zero/uuid/v7";
+import { createTodoProjection } from "./application/todo-projection.mjs";
+import { createTodoUseCases } from "./application/todo-use-cases.mjs";
+import { openSqliteTodoRepository } from "./infrastructure/sqlite-todo-repository.mjs";
 
 const moduleFiles = new Map([
   ["@ts-zero/html/actions.js", new URL("../../packages/html/dist/actions.js", import.meta.url)],
@@ -21,53 +24,17 @@ const moduleFiles = new Map([
 ]);
 
 const clientFile = new URL("./dist/pages/client.js", import.meta.url);
+const todoRepository = await openSqliteTodoRepository();
+const todoUseCases = createTodoUseCases({
+  repository: todoRepository,
+  createId: v7,
+  isTodoId: validate,
+});
 
-const store = createStore({
-  freeze: true,
-  state: {
-    todos: [
-      {
-        id: v7(),
-        title: "Faire tourner @ts-zero/http",
-        completed: true,
-      },
-      {
-        id: v7(),
-        title: "Imaginer le protocole live",
-        completed: false,
-      },
-    ],
-  },
-  context: {
-    id: v7,
-  },
-  transitions: {
-    createTodo: (state, title, context) => {
-      if (typeof title !== "string" || title.length === 0) {
-        return state;
-      }
+todoUseCases.seed();
 
-      return {
-        ...state,
-        todos: [
-          {
-            id: context.id(),
-            title,
-            completed: false,
-          },
-          ...state.todos,
-        ],
-      };
-    },
-    toggleTodo: (state, id) => ({
-      ...state,
-      todos: state.todos.map((todo) => (todo.id === id ? { ...todo, completed: !todo.completed } : todo)),
-    }),
-    deleteTodo: (state, id) => ({
-      ...state,
-      todos: state.todos.filter((todo) => todo.id !== id),
-    }),
-  },
+const store = createTodoProjection({
+  todos: todoUseCases.listTodos(),
 });
 
 export const app = createApp();
@@ -119,23 +86,30 @@ async function serveStoreModule({ params }) {
 
 async function createTodo({ request }) {
   const form = await readForm(request);
-  const title = form.get("title")?.trim();
+  const todo = todoUseCases.createTodo({
+    id: form.get("id"),
+    title: form.get("title"),
+  });
 
-  if (title !== undefined && title.length > 0) {
-    store.dispatch("createTodo", title);
+  if (todo !== null) {
+    store.dispatch("createTodo", todo);
   }
 
   return redirect(router.path("home"));
 }
 
 function toggleTodo({ params }) {
-  store.dispatch("toggleTodo", params.id);
+  if (todoUseCases.toggleTodo({ id: params.id })) {
+    store.dispatch("toggleTodo", params.id);
+  }
 
   return redirect(router.path("home"));
 }
 
 function deleteTodo({ params }) {
-  store.dispatch("deleteTodo", params.id);
+  if (todoUseCases.deleteTodo({ id: params.id })) {
+    store.dispatch("deleteTodo", params.id);
+  }
 
   return redirect(router.path("home"));
 }
