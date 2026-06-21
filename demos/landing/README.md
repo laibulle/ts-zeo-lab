@@ -38,6 +38,25 @@ npm --workspace @ts-zero/demo-landing run native:open:xcode
 
 Le projet Xcode est genere depuis `native/project.yml` avec XcodeGen. Le `.xcodeproj` reste un artefact local.
 
+## Deploiement
+
+Vercel depuis la racine du monorepo:
+
+```sh
+npm run deploy:landing:vercel:build
+```
+
+`vercel.json` route le trafic vers `api/index.ts`, une Web Function qui expose directement `app.fetch`. Le mode Vercel utilise `TODO_REPOSITORY=memory`: la demo reste interactive, mais les todos ne sont pas persistants entre cold starts.
+
+Docker Bun multi-stage depuis la racine du monorepo:
+
+```sh
+npm run docker:landing:build
+npm run docker:landing:run
+```
+
+Le conteneur ecoute sur `0.0.0.0:3000` et persiste SQLite dans le volume Docker `/data`.
+
 ## Ce que la demo exerce
 
 - `@ts-zero/http` pour le routing Web Standard `Request` / `Response`;
@@ -56,6 +75,7 @@ Le projet Xcode est genere depuis `native/project.yml` avec XcodeGen. Le `.xcode
 - compilation du client demo avec Solid et Vite;
 - Vite pour bundler le client TypeScript/TSX de demo;
 - SQLite pour persister les todos;
+- repository memoire pour les deploys serverless sans disque persistant;
 - app macOS SwiftUI native qui charge un runtime TypeScript dans JavaScriptCore;
 - `@ts-zero/runtime` pour le channel host, les events, les messages et les capabilities partages;
 - adaptateurs runtime separes du coeur HTTP.
@@ -65,6 +85,7 @@ Le projet Xcode est genere depuis `native/project.yml` avec XcodeGen. Le `.xcode
 - `domain/`: modele Todo et regles metier pures, sans HTTP, SQLite, DOM ou store;
 - `application/`: cas d'usage Todo et projection en memoire pour le rendu SSR;
 - `infrastructure/`: repository SQLite, compatible Node `node:sqlite` et Bun `bun:sqlite`;
+- `infrastructure/memory-todo-repository.ts`: repository ephemere pour Vercel/serverless;
 - `web/`: couche interface facon Phoenix, avec front, serveur web et contrats partages;
 - `web/server/`: HTTP, SSR et adaptateurs Node/Bun;
 - `web/client/`: entree navigateur, landing, pages et composants interactifs;

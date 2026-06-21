@@ -36,6 +36,8 @@ npm run check
 npm run bench:uuid:compare
 npm run demo:landing
 npm run demo:landing:bun
+npm run docker:landing:build
+npm run docker:landing:run
 ```
 
 Les benchmarks de comparaison installent les references dans un dossier temporaire hors du depot; elles ne sont pas ajoutees aux dependances.
@@ -53,6 +55,11 @@ Ce gate construit les packages, lance les tests, verifie les subpaths publics, l
 ## Demos
 
 - `demos/landing`: landing SSR avec demos integrees, dont une todo app avec `@ts-zero/http`, `@ts-zero/node-server`, `@ts-zero/bun-server`, `@ts-zero/router`, `@ts-zero/store` et `@ts-zero/uuid/v7`.
+
+La landing est deployable:
+
+- sur Vercel via `vercel.json`, avec `api/index.ts` comme Web Function et `TODO_REPOSITORY=memory`;
+- en conteneur Bun multi-stage avec `demos/landing/Dockerfile`.
 
 ## Tree-Shaking Top Tier
 

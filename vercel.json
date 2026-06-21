@@ -1,0 +1,19 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run deploy:landing:vercel:build",
+  "outputDirectory": "demos/landing/dist/web/public",
+  "env": {
+    "TODO_REPOSITORY": "memory"
+  },
+  "functions": {
+    "api/index.ts": {
+      "includeFiles": "demos/landing/dist/web/public/**"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api/index"
+    }
+  ]
+}

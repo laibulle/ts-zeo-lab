@@ -15,13 +15,13 @@ import { v7 } from "@ts-zero/uuid/v7";
 import { createTodoProjection } from "../../application/todo-projection.js";
 import { createTodoUseCases } from "../../application/todo-use-cases.js";
 import type { Todo } from "../../domain/todo.js";
-import { openSqliteTodoRepository } from "../../infrastructure/sqlite-todo-repository.js";
+import { openTodoRepository } from "../../infrastructure/todo-repository.js";
 import type { Page, TodoMutationActionResult, TodoMutationActionType, TodoMutationPayload, TodoRuntimeResult } from "../shared/types.js";
 
 const clientFile = new URL("../public/client.mjs", import.meta.url);
 const publicDirectory = new URL("../public/", import.meta.url);
 const clientEntry = process.env.TODO_CLIENT_ENTRY ?? "/client.mjs";
-const todoRepository = await openSqliteTodoRepository();
+const todoRepository = await openTodoRepository();
 const todoUseCases = createTodoUseCases({
   repository: todoRepository,
   createId: v7,

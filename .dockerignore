@@ -1,0 +1,11 @@
+node_modules
+**/node_modules
+dist
+**/dist
+.git
+.DS_Store
+*.tgz
+*.sqlite
+*.sqlite-*
+demos/**/native/**/*.xcodeproj
+demos/**/native/**/DerivedData

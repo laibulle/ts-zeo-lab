@@ -4,6 +4,7 @@ packages/*/dist/
 **/dist/
 *.tsbuildinfo
 .DS_Store
+.vercel/
 
 # JetBrains / WebStorm
 .idea/
@@ -18,3 +19,4 @@ demos/**/*.sqlite-*
 # Generated Xcode projects
 demos/**/*.xcodeproj/
 demos/**/DerivedData/
+.vercel

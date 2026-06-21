@@ -17,6 +17,9 @@
     "demo:landing:bun": "npm run build && npm --workspace @ts-zero/demo-landing run build && npm --workspace @ts-zero/demo-landing run start:bun",
     "demo:landing:macos": "npm run build && npm --workspace @ts-zero/demo-landing run native:build:xcode",
     "demo:landing": "npm run build && npm --workspace @ts-zero/demo-landing run dev",
+    "deploy:landing:vercel:build": "npm run build && npm --workspace @ts-zero/demo-landing run build",
+    "docker:landing:build": "docker build -f demos/landing/Dockerfile -t ts-zero-landing .",
+    "docker:landing:run": "docker run --rm -p 3000:3000 -v ts-zero-landing-data:/data ts-zero-landing",
     "pack:check": "npm --workspace @ts-zero/uuid pack --dry-run && npm --workspace @ts-zero/querystring pack --dry-run && npm --workspace @ts-zero/multipart pack --dry-run && npm --workspace @ts-zero/http pack --dry-run && npm --workspace @ts-zero/node-server pack --dry-run && npm --workspace @ts-zero/bun-server pack --dry-run && npm --workspace @ts-zero/router pack --dry-run && npm --workspace @ts-zero/store pack --dry-run && npm --workspace @ts-zero/html pack --dry-run && npm --workspace @ts-zero/fsm pack --dry-run && npm --workspace @ts-zero/runtime pack --dry-run && npm --workspace @ts-zero/mutation pack --dry-run && npm --workspace @ts-zero/native-runtime pack --dry-run",
     "test": "npm run build && node --test packages/*/test/*.test.mjs"
   },
