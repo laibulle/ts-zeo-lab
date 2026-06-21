@@ -1,6 +1,18 @@
 export const TODO_TITLE_MAX_LENGTH = 120;
 
-export function createTodoEntity({ id, title, completed = false }) {
+export interface Todo {
+  readonly id: string;
+  readonly title: string;
+  readonly completed: boolean;
+}
+
+export interface CreateTodoEntityInput {
+  readonly id?: unknown;
+  readonly title?: unknown;
+  readonly completed?: unknown;
+}
+
+export function createTodoEntity({ id, title, completed = false }: CreateTodoEntityInput): Todo | null {
   const normalizedTitle = normalizeTodoTitle(title);
 
   if (typeof id !== "string" || normalizedTitle === null) {
@@ -14,7 +26,7 @@ export function createTodoEntity({ id, title, completed = false }) {
   };
 }
 
-export function normalizeTodoTitle(title) {
+export function normalizeTodoTitle(title: unknown): string | null {
   if (typeof title !== "string") {
     return null;
   }

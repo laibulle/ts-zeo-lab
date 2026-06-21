@@ -1,14 +1,19 @@
 import { createStore } from "@ts-zero/store/create";
-import { createTodoEntity } from "../domain/todo.mjs";
+import type { Store } from "@ts-zero/store";
+import { createTodoEntity, type Todo } from "../domain/todo.js";
 
-export function createTodoProjection({ todos }) {
+export interface TodoProjectionState {
+  readonly todos: readonly Todo[];
+}
+
+export function createTodoProjection({ todos }: { readonly todos: readonly Todo[] }): Store<TodoProjectionState> {
   return createStore({
     freeze: true,
     state: {
       todos,
     },
     transitions: {
-      createTodo: (state, payload) => {
+      createTodo: (state, payload: unknown) => {
         const todo = createTodoEntity(payload ?? {});
 
         if (todo === null) {
@@ -23,11 +28,11 @@ export function createTodoProjection({ todos }) {
           ],
         };
       },
-      toggleTodo: (state, id) => ({
+      toggleTodo: (state, id: unknown) => ({
         ...state,
         todos: state.todos.map((todo) => (todo.id === id ? { ...todo, completed: !todo.completed } : todo)),
       }),
-      deleteTodo: (state, id) => ({
+      deleteTodo: (state, id: unknown) => ({
         ...state,
         todos: state.todos.filter((todo) => todo.id !== id),
       }),

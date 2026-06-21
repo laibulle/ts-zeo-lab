@@ -1,6 +1,40 @@
-import { createTodoEntity } from "../domain/todo.mjs";
+import { createTodoEntity, type Todo } from "../domain/todo.js";
 
-export function createTodoUseCases({ repository, createId, isTodoId }) {
+export interface TodoRepository {
+  readonly listTodos: () => readonly Todo[];
+  readonly countTodos: () => number;
+  readonly createTodo: (todo: Todo) => void;
+  readonly toggleTodo: (id: string) => void;
+  readonly deleteTodo: (id: string) => void;
+  readonly close: () => void;
+}
+
+export interface CreateTodoCommand {
+  readonly id?: unknown;
+  readonly title?: unknown;
+}
+
+export interface TodoIdCommand {
+  readonly id?: unknown;
+}
+
+export interface TodoUseCases {
+  readonly listTodos: () => readonly Todo[];
+  readonly createTodo: (command: CreateTodoCommand) => Todo | null;
+  readonly toggleTodo: (command: TodoIdCommand) => boolean;
+  readonly deleteTodo: (command: TodoIdCommand) => boolean;
+  readonly seed: () => void;
+}
+
+export function createTodoUseCases({
+  repository,
+  createId,
+  isTodoId,
+}: {
+  readonly repository: TodoRepository;
+  readonly createId: () => string;
+  readonly isTodoId: (id: unknown) => id is string;
+}): TodoUseCases {
   return {
     listTodos() {
       return repository.listTodos();

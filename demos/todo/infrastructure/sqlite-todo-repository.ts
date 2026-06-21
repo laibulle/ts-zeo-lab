@@ -1,15 +1,18 @@
 import { mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import type { TodoRepository } from "../application/todo-use-cases.js";
+import type { Todo } from "../domain/todo.js";
 
 const defaultFile = fileURLToPath(new URL("../todo.sqlite", import.meta.url));
 
-export async function openSqliteTodoRepository(file = process.env.TODO_DB ?? defaultFile) {
+export async function openSqliteTodoRepository(file = process.env.TODO_DB ?? defaultFile): Promise<TodoRepository> {
   if (file !== ":memory:") {
     await mkdir(dirname(file), { recursive: true });
   }
 
-  const driver = globalThis.Bun === undefined ? await openNodeSqlite(file) : await openBunSqlite(file);
+  const runtime = globalThis as typeof globalThis & { readonly Bun?: unknown };
+  const driver = runtime.Bun === undefined ? await openNodeSqlite(file) : await openBunSqlite(file);
 
   driver.exec("PRAGMA journal_mode = WAL");
   driver.exec("PRAGMA foreign_keys = ON");
@@ -49,22 +52,45 @@ export async function openSqliteTodoRepository(file = process.env.TODO_DB ?? def
   };
 }
 
-async function openNodeSqlite(file) {
+interface SqliteDriver {
+  readonly exec: (sql: string) => void;
+  readonly all: (sql: string, ...params: readonly unknown[]) => readonly Record<string, unknown>[];
+  readonly get: (sql: string, ...params: readonly unknown[]) => Record<string, unknown> | undefined;
+  readonly run: (sql: string, ...params: readonly unknown[]) => void;
+  readonly close: () => void;
+}
+
+interface SqliteStatement {
+  readonly all: (...params: readonly unknown[]) => readonly Record<string, unknown>[];
+  readonly get: (...params: readonly unknown[]) => Record<string, unknown> | undefined;
+  readonly run: (...params: readonly unknown[]) => unknown;
+}
+
+interface SqliteDatabase {
+  readonly exec: (sql: string) => unknown;
+  readonly close: () => void;
+}
+
+async function openNodeSqlite(file: string): Promise<SqliteDriver> {
   const { DatabaseSync } = await import("node:sqlite");
   const database = new DatabaseSync(file);
 
-  return createDriver(database, (sql) => database.prepare(sql));
+  return createDriver(database, (sql) => database.prepare(sql) as SqliteStatement);
 }
 
-async function openBunSqlite(file) {
+async function openBunSqlite(file: string): Promise<SqliteDriver> {
   const { Database } = await import("bun:sqlite");
   const database = new Database(file, { create: true });
-  const prepare = typeof database.prepare === "function" ? database.prepare.bind(database) : database.query.bind(database);
+  const prepare = typeof database.prepare === "function" ? database.prepare.bind(database) : database.query?.bind(database);
+
+  if (prepare === undefined) {
+    throw new Error("Bun SQLite database does not expose prepare or query");
+  }
 
   return createDriver(database, prepare);
 }
 
-function createDriver(database, prepare) {
+function createDriver(database: SqliteDatabase, prepare: (sql: string) => SqliteStatement): SqliteDriver {
   return {
     exec(sql) {
       database.exec(sql);
@@ -84,7 +110,7 @@ function createDriver(database, prepare) {
   };
 }
 
-function rowToTodo(row) {
+function rowToTodo(row: Record<string, unknown>): Todo {
   return {
     id: String(row.id),
     title: String(row.title),

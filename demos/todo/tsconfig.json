@@ -9,8 +9,13 @@
     "jsxImportSource": "@ts-zero/html"
   },
   "include": [
+    "*.ts",
+    "application/**/*.ts",
     "components/**/*.tsx",
+    "domain/**/*.ts",
+    "infrastructure/**/*.ts",
     "pages/**/*.ts",
-    "pages/**/*.tsx"
+    "pages/**/*.tsx",
+    "types/**/*.d.ts"
   ]
 }
