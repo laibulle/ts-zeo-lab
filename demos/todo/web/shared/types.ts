@@ -1,4 +1,4 @@
-import type { Store } from "@ts-zero/html/types";
+import type { Store } from "@ts-zero/store";
 
 export interface Todo {
   readonly id: string;
@@ -24,6 +24,7 @@ export interface Snapshot {
 export interface Routes {
   readonly createTodo: string;
   readonly home: string;
+  readonly runtime: string;
   readonly stats: string;
   readonly toggleTodo: (id: string) => string;
   readonly deleteTodo: (id: string) => string;
@@ -42,3 +43,5 @@ export interface CreateTodoPayload {
 export type TodoStore = Store<TodoState>;
 
 export type UiStore = Store<UiState>;
+
+export type TodoRuntimeOperation = "create" | "toggle" | "delete";

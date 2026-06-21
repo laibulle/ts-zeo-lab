@@ -1,6 +1,7 @@
 import { mount } from "@ts-zero/html/mount";
 import { TodoApp } from "./app.js";
 import { createUiStore, getPageFromLocation } from "./navigation.js";
+import { createTodoWebRuntime } from "./runtime.js";
 import { createTodoStore } from "./todo-store.js";
 import { routes } from "../shared/routes.js";
 import type { Snapshot } from "../shared/types.js";
@@ -14,6 +15,10 @@ if (initialState === null || initialState.textContent === null) {
 const initial = JSON.parse(initialState.textContent) as Snapshot;
 const store = createTodoStore(initial);
 const uiStore = createUiStore(getPageFromLocation(routes));
+const runtime = createTodoWebRuntime({
+  endpoint: routes.runtime,
+  store,
+});
 const target = document.getElementById("app");
 
 if (target === null) {
@@ -24,4 +29,4 @@ addEventListener("popstate", () => {
   uiStore.dispatch("navigate", getPageFromLocation(routes));
 });
 
-mount(target, <TodoApp store={store} uiStore={uiStore} routes={routes} />);
+mount(target, <TodoApp store={store} uiStore={uiStore} runtime={runtime} routes={routes} />);

@@ -1,39 +1,42 @@
-import { formAction } from "@ts-zero/html/actions";
 import type { HtmlChild } from "@ts-zero/html/types";
-import { withServerPost } from "../server-post.js";
+import type { TodoWebRuntime } from "../runtime.js";
 import { createTodoPayload } from "../todo-store.js";
-import type { TodoStore } from "../../shared/types.js";
 
-export function TodoComposer({ store, action }: { readonly store: TodoStore; readonly action: string }): HtmlChild {
+export function TodoComposer({
+  runtime,
+  action,
+}: {
+  readonly runtime: TodoWebRuntime;
+  readonly action: string;
+}): HtmlChild {
   return (
     <form
       class="composer"
       method="post"
       action={action}
-      onSubmit={withServerPost(
-        formAction(store, "createTodo", (form, data) => {
-          const title = String(data.get("title") ?? "");
-          const payload = createTodoPayload(title);
+      onSubmit={(event: SubmitEvent) => {
+        event.preventDefault();
 
-          if (payload === null) {
-            return "";
-          }
+        const form = event.currentTarget;
 
-          const idField = form.elements.namedItem("id");
+        if (!(form instanceof HTMLFormElement)) {
+          throw new Error("Expected submit event target to be a form");
+        }
 
-          if (idField instanceof HTMLInputElement) {
-            idField.value = payload.id;
-          }
+        const title = String(new FormData(form).get("title") ?? "");
+        const payload = createTodoPayload(title);
 
-          data.set("id", payload.id);
-          data.set("title", payload.title);
+        if (payload === null) {
+          return;
+        }
 
-          return payload;
-        }),
-        (form) => {
+        void runtime.dispatch("create", {
+          id: payload.id,
+          title: payload.title,
+        }).then(() => {
           form.reset();
-        },
-      )}
+        });
+      }}
     >
       <input name="id" type="hidden" />
       <input name="title" autocomplete="off" maxlength={120} placeholder="Add a task" required />

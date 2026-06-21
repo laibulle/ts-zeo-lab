@@ -1,27 +1,35 @@
 import { list } from "@ts-zero/html/bindings";
 import type { HtmlChild } from "@ts-zero/html/types";
-import { withServerPost } from "../server-post.js";
+import type { TodoWebRuntime } from "../runtime.js";
 import type { Routes, Todo, TodoStore } from "../../shared/types.js";
 
-export function TodoList({ store, routes }: { readonly store: TodoStore; readonly routes: Routes }): HtmlChild {
+export function TodoList({
+  runtime,
+  store,
+  routes,
+}: {
+  readonly runtime: TodoWebRuntime;
+  readonly store: TodoStore;
+  readonly routes: Routes;
+}): HtmlChild {
   return (
     <ul>
       {list(
         store,
         (state) => state.todos,
         (todo) => todo.id,
-        (todo) => <TodoItem store={store} routes={routes} todo={todo} />,
+        (todo) => <TodoItem runtime={runtime} routes={routes} todo={todo} />,
       )}
     </ul>
   );
 }
 
 function TodoItem({
-  store,
+  runtime,
   routes,
   todo,
 }: {
-  readonly store: TodoStore;
+  readonly runtime: TodoWebRuntime;
   readonly routes: Routes;
   readonly todo: Todo;
 }): HtmlChild {
@@ -31,20 +39,20 @@ function TodoItem({
       <form
         method="post"
         action={routes.toggleTodo(todo.id)}
-        onSubmit={withServerPost((event) => {
+        onSubmit={(event: SubmitEvent) => {
           event.preventDefault();
-          store.dispatch("toggleTodo", todo.id);
-        })}
+          void runtime.dispatch("toggle", { id: todo.id });
+        }}
       >
         <button class="secondary" type="submit">{todo.completed ? "Reopen" : "Done"}</button>
       </form>
       <form
         method="post"
         action={routes.deleteTodo(todo.id)}
-        onSubmit={withServerPost((event) => {
+        onSubmit={(event: SubmitEvent) => {
           event.preventDefault();
-          store.dispatch("deleteTodo", todo.id);
-        })}
+          void runtime.dispatch("delete", { id: todo.id });
+        }}
       >
         <button class="danger" type="submit">Delete</button>
       </form>

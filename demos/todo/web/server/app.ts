@@ -1,9 +1,10 @@
 import { readFile } from "node:fs/promises";
 
-import { createApp, html, redirect, text } from "@ts-zero/http";
+import { createApp, html, json, redirect, text } from "@ts-zero/http";
 import { defineRoutes } from "@ts-zero/router";
 import type { App, Context, Handler, HttpMethod } from "@ts-zero/http";
 import type { Router } from "@ts-zero/router";
+import type { HostMessage, RuntimeMessage, Serializable } from "@ts-zero/runtime/types";
 import { validate } from "@ts-zero/uuid/format";
 import { v7 } from "@ts-zero/uuid/v7";
 import { createTodoProjection } from "../../application/todo-projection.js";
@@ -26,6 +27,10 @@ const moduleFiles = new Map<string, URL>([
   ["@ts-zero/store/freeze.js", new URL("../../../../../packages/store/dist/freeze.js", import.meta.url)],
   ["@ts-zero/store/snapshot.js", new URL("../../../../../packages/store/dist/snapshot.js", import.meta.url)],
   ["@ts-zero/store/types.js", new URL("../../../../../packages/store/dist/types.js", import.meta.url)],
+  ["@ts-zero/runtime/errors.js", new URL("../../../../../packages/runtime/dist/errors.js", import.meta.url)],
+  ["@ts-zero/runtime/runtime.js", new URL("../../../../../packages/runtime/dist/runtime.js", import.meta.url)],
+  ["@ts-zero/runtime/serializable.js", new URL("../../../../../packages/runtime/dist/serializable.js", import.meta.url)],
+  ["@ts-zero/runtime/types.js", new URL("../../../../../packages/runtime/dist/types.js", import.meta.url)],
 ]);
 
 const clientFile = new URL("../client/client.js", import.meta.url);
@@ -53,7 +58,9 @@ export const router = defineRoutes<Handler>((r) => {
     r.get("stats", "/stats", renderStats);
     r.get("client", "/client.mjs", renderClientModule);
     r.get("html.module", "/modules/@ts-zero/html/:file", serveHtmlModule);
+    r.get("runtime.module", "/modules/@ts-zero/runtime/:file", serveRuntimeModule);
     r.get("store.module", "/modules/@ts-zero/store/:file", serveStoreModule);
+    r.post("runtime", "/runtime", handleRuntimeMessage);
     r.scope("/todos", (r) => {
       r.post("todos.create", "/", createTodo);
       r.post("todos.toggle", "/:id/toggle", toggleTodo);
@@ -84,6 +91,10 @@ async function renderClientModule(): Promise<Response> {
 
 async function serveHtmlModule({ params }: Context): Promise<Response> {
   return serveModule(`@ts-zero/html/${params.file}`);
+}
+
+async function serveRuntimeModule({ params }: Context): Promise<Response> {
+  return serveModule(`@ts-zero/runtime/${params.file}`);
 }
 
 async function serveStoreModule({ params }: Context): Promise<Response> {
@@ -118,6 +129,78 @@ function deleteTodo({ params }: Context): Response {
   }
 
   return redirect(router.path("home"));
+}
+
+async function handleRuntimeMessage({ request }: Context): Promise<Response> {
+  const message = await request.json() as RuntimeMessage;
+
+  if (message.kind !== "request" || message.capability !== "todo") {
+    return json(runtimeError(message, "Unsupported runtime message"), { status: 400 });
+  }
+
+  const snapshot = dispatchTodoRuntimeOperation(message.operation, message.payload);
+
+  return json({
+    kind: "response",
+    id: message.id,
+    ok: true,
+    value: snapshot as unknown as Serializable,
+  } satisfies HostMessage);
+}
+
+function dispatchTodoRuntimeOperation(operation: string, payload: Serializable | undefined): ReturnType<typeof store.snapshot> {
+  if (operation === "create") {
+    const command = asRecord(payload);
+    const todo = todoUseCases.createTodo({
+      id: command.id,
+      title: command.title,
+    });
+
+    if (todo !== null) {
+      store.dispatch("createTodo", todo);
+    }
+
+    return store.snapshot();
+  }
+
+  if (operation === "toggle") {
+    const command = asRecord(payload);
+
+    if (todoUseCases.toggleTodo({ id: command.id })) {
+      store.dispatch("toggleTodo", command.id);
+    }
+
+    return store.snapshot();
+  }
+
+  if (operation === "delete") {
+    const command = asRecord(payload);
+
+    if (todoUseCases.deleteTodo({ id: command.id })) {
+      store.dispatch("deleteTodo", command.id);
+    }
+
+    return store.snapshot();
+  }
+
+  return store.snapshot();
+}
+
+function asRecord(value: Serializable | undefined): Record<string, Serializable | undefined> {
+  if (value === null || value === undefined || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  return value as Record<string, Serializable | undefined>;
+}
+
+function runtimeError(message: RuntimeMessage, reason: string): HostMessage {
+  return {
+    kind: "response",
+    id: message.kind === "request" ? message.id : "unknown",
+    ok: false,
+    error: reason,
+  };
 }
 
 async function readForm(request: Request): Promise<URLSearchParams> {
@@ -435,6 +518,7 @@ function renderImportMap(): string {
       "@ts-zero/html/elements": "/modules/@ts-zero/html/elements.js",
       "@ts-zero/html/jsx-runtime": "/modules/@ts-zero/html/jsx-runtime.js",
       "@ts-zero/html/mount": "/modules/@ts-zero/html/mount.js",
+      "@ts-zero/runtime/runtime": "/modules/@ts-zero/runtime/runtime.js",
       "@ts-zero/store/create": "/modules/@ts-zero/store/create.js",
     },
   });

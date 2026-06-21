@@ -21,6 +21,7 @@ export default defineConfig({
     proxy: {
       "^/$": backend,
       "^/stats$": backend,
+      "^/runtime$": backend,
       "^/todos(?:/.*)?$": backend,
     },
   },
