@@ -1,0 +1,39 @@
+{
+  "name": "@ts-zero/http",
+  "version": "0.0.0",
+  "description": "Zero-dependency Web Standard HTTP foundation for TypeScript.",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./app": {
+      "types": "./dist/app.d.ts",
+      "default": "./dist/app.js"
+    },
+    "./errors": {
+      "types": "./dist/errors.d.ts",
+      "default": "./dist/errors.js"
+    },
+    "./responses": {
+      "types": "./dist/responses.d.ts",
+      "default": "./dist/responses.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "default": "./dist/types.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "tsc -b --clean",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {}
+}

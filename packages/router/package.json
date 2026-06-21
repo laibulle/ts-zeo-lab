@@ -1,0 +1,39 @@
+{
+  "name": "@ts-zero/router",
+  "version": "0.0.0",
+  "description": "Zero-dependency explicit router builder for TypeScript.",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./builder": {
+      "types": "./dist/builder.d.ts",
+      "default": "./dist/builder.js"
+    },
+    "./errors": {
+      "types": "./dist/errors.d.ts",
+      "default": "./dist/errors.js"
+    },
+    "./path": {
+      "types": "./dist/path.d.ts",
+      "default": "./dist/path.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "default": "./dist/types.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "tsc -b --clean",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {}
+}
