@@ -11,6 +11,7 @@
     "@ts-zero/http": "0.0.0",
     "@ts-zero/node-server": "0.0.0",
     "@ts-zero/router": "0.0.0",
+    "@ts-zero/store": "0.0.0",
     "@ts-zero/uuid": "0.0.0"
   }
 }

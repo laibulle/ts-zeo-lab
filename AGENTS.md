@@ -57,3 +57,5 @@ For HTTP changes, keep the core runtime-agnostic: Web Standard `Request` / `Resp
 For runtime server adapters, keep Node and Bun isolated in separate packages. `@ts-zero/node-server` may import `node:*`; `@ts-zero/bun-server` must not. Neither adapter should leak back into `@ts-zero/http`.
 
 For router changes, keep `defineRoutes` explicit and decorator-free. File-based routing, React adapters, and code generation belong in separate optional packages, not in `@ts-zero/router`.
+
+For store changes, keep the core deterministic and immutable: no React, no transport, no persistence, no proxy layer, no runtime-specific APIs. Preserve selector subscriptions for fine-grained rendering, versioned snapshots for hydration, replace patches for v0 replication, and focused subpaths for tree-shaking.

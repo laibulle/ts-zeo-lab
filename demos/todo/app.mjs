@@ -1,19 +1,49 @@
 import { createApp, html, redirect } from "@ts-zero/http";
 import { defineRoutes } from "@ts-zero/router";
+import { createStore } from "@ts-zero/store/create";
 import { v7 } from "@ts-zero/uuid/v7";
 
-const todos = [
-  {
-    id: v7(),
-    title: "Faire tourner @ts-zero/http",
-    completed: true,
+const store = createStore({
+  freeze: true,
+  state: {
+    todos: [
+      {
+        id: v7(),
+        title: "Faire tourner @ts-zero/http",
+        completed: true,
+      },
+      {
+        id: v7(),
+        title: "Imaginer le protocole live",
+        completed: false,
+      },
+    ],
   },
-  {
-    id: v7(),
-    title: "Imaginer le protocole live",
-    completed: false,
+  context: {
+    id: v7,
   },
-];
+  transitions: {
+    createTodo: (state, title, context) => ({
+      ...state,
+      todos: [
+        {
+          id: context.id(),
+          title,
+          completed: false,
+        },
+        ...state.todos,
+      ],
+    }),
+    toggleTodo: (state, id) => ({
+      ...state,
+      todos: state.todos.map((todo) => (todo.id === id ? { ...todo, completed: !todo.completed } : todo)),
+    }),
+    deleteTodo: (state, id) => ({
+      ...state,
+      todos: state.todos.filter((todo) => todo.id !== id),
+    }),
+  },
+});
 
 export const app = createApp();
 
@@ -47,38 +77,22 @@ async function createTodo({ request }) {
   const title = form.get("title")?.trim();
 
   if (title !== undefined && title.length > 0) {
-    todos.unshift({
-      id: v7(),
-      title,
-      completed: false,
-    });
+    store.dispatch("createTodo", title);
   }
 
   return redirect(router.path("home"));
 }
 
 function toggleTodo({ params }) {
-  const todo = findTodo(params.id);
-
-  if (todo !== undefined) {
-    todo.completed = !todo.completed;
-  }
+  store.dispatch("toggleTodo", params.id);
 
   return redirect(router.path("home"));
 }
 
 function deleteTodo({ params }) {
-  const index = todos.findIndex((todo) => todo.id === params.id);
-
-  if (index !== -1) {
-    todos.splice(index, 1);
-  }
+  store.dispatch("deleteTodo", params.id);
 
   return redirect(router.path("home"));
-}
-
-function findTodo(id) {
-  return todos.find((todo) => todo.id === id);
 }
 
 async function readForm(request) {
@@ -87,6 +101,7 @@ async function readForm(request) {
 }
 
 function renderPage() {
+  const { todos } = store.getState();
   const remaining = todos.filter((todo) => !todo.completed).length;
 
   return `<!doctype html>

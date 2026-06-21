@@ -23,6 +23,7 @@ Objectif: produire des packages TypeScript petits, lisibles, rapides, securises,
 - `@ts-zero/node-server`: adaptateur Node HTTP pour handlers Web Standard.
 - `@ts-zero/bun-server`: adaptateur Bun.serve pour handlers Web Standard.
 - `@ts-zero/router`: routeur explicite `defineRoutes`, manifest public, scopes et pipelines.
+- `@ts-zero/store`: noyau d'etat immutable pour runtimes serveur/client, hydration et rendu fin.
 
 ## Commandes
 
